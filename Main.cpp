@@ -4,7 +4,9 @@
 
 int main()
 {
-	std::vector<unsigned int> topology;
+	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
+	std::vector<unsigned int> topology; 
+
 	std::vector<double> inputVals;
 	std::vector<double> targetVals;
 	std::vector<double> resultVals;
