@@ -5,7 +5,12 @@
 #include "Net.h"
 #include "TrainingData.h"
 
+#include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/writer.h"
+
 //#define TmpDataCreate
+#define TmpDataCreateJSON
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
 {
@@ -27,8 +32,9 @@ void CreateTrainingDataFile()
 	std::cout << "topology: 2 4 1" << std::endl;
 	for (int i = 2000; i >= 0; --i)
 	{
-		int n1 = (int)(2.0f*rand() / double(RAND_MAX));
-		int n2 = (int)(2.0f*rand() / double(RAND_MAX));
+		//int n2 = (int)(2.0f*rand() / double(RAND_MAX));
+		int n1 = rand() % 2;
+		int n2 = rand() % 2;
 		int t = n1^n2; // 0 or 1
 		std::cout << "in: " << n1 << ".0 " << n2 << ".0 " << std::endl;
 		std::cout << "out: " << t << ".0" << std::endl;
@@ -38,11 +44,63 @@ void CreateTrainingDataFile()
 }
 #endif // TmpDataCreate
 
+#ifdef TmpDataCreateJSON
+rapidjson::Document CreateTrainingDataJSON()
+{
+	std::FILE *f;
+	fopen_s(&f, "TrainingData.json", "wb");
+
+	rapidjson::Value json_val;
+
+	rapidjson::Document doc;
+	auto& allocator = doc.GetAllocator();
+
+	doc.SetObject();
+
+	json_val.SetArray()
+		.PushBack(2, allocator)
+		.PushBack(4, allocator)
+		.PushBack(1, allocator);
+
+	doc.AddMember("topology", json_val, allocator);
+
+	/*for (int i = 1; i >= 0; --i)
+	{
+		int n1 = rand() % 2;
+		int n2 = rand() % 2;
+		int t = n1^n2; // 0 or 1
+
+		json_val.SetArray()
+			.PushBack(static_cast<double>(n1), allocator)
+			.PushBack(static_cast<double>(n2), allocator);
+		doc.AddMember("in", json_val, allocator);
+
+		json_val.SetDouble(static_cast<double>(t));
+		doc.AddMember("out", json_val, allocator);
+	}*/
+
+
+
+	char writeBuffer[256];
+	rapidjson::FileWriteStream os(f, writeBuffer, sizeof(writeBuffer));
+	
+	rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+	doc.Accept(writer);
+	fclose(f);
+
+	return doc;
+}
+#endif //TmpDataCreateJSON
+
 int main()
 {
 #ifdef TmpDataCreate
 	CreateTrainingDataFile();
 #endif // TmpDataCreate
+
+#ifdef TmpDataCreateJSON
+	CreateTrainingDataJSON();
+#endif // TmpDataCreateJSON
 
 	TrainingData trainData("TrainingData.txt");
 
