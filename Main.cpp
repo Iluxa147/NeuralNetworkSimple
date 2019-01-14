@@ -25,7 +25,7 @@ void CreateTrainingDataFile()
 
 	//XOR - two inputs/one output
 	std::cout << "topology: 2 4 1" << std::endl;
-	for (int i = 13; i >= 0; --i)
+	for (int i = 2000; i >= 0; --i)
 	{
 		int n1 = (int)(2.0f*rand() / double(RAND_MAX));
 		int n2 = (int)(2.0f*rand() / double(RAND_MAX));

@@ -54,6 +54,10 @@ void Neuron::FeedForward(const Layer & prevLayer)
 	for (size_t n = 0; n < prevLayer.size(); ++n)
 	{
 		sum += prevLayer[n].outputVal_ * prevLayer[n].outputWeights_[neuronIndex_].weight;
+
+/*#ifdef DEBUG
+		std::cout << "layer number " << n << "at index " << neuronIndex_ << " ";
+#endif // DEBUG*/
 	}
 
 	outputVal_ = Neuron::TransferFunction(sum);

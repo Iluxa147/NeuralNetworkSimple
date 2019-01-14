@@ -17,7 +17,7 @@ public:
 
 private:
 	std::vector<Layer> layers_; //[numLayer] [numNeuron]
-	double error_ = 0.0f;
+	double error_;
 	double recentAverageError_;
 	double recentAverageSmoothingFacor_;
 };
@@ -32,8 +32,8 @@ inline Net<T>::Net(const std::vector<unsigned int>& topology)
 		//fill net with layers
 		layers_.push_back(Layer());
 
-		//outputs connections quantity for each neuron in that particular layer (numLayer)
-		unsigned int numOutputs = layerNum == numLayers - 1 ? 0 : topology[layerNum + 1];
+		//outputs connections quantity for each neuron in that particular layer. Ofc, no outputs at output layer
+		unsigned int numOutputs = layerNum == topology.size() - 1 ? 0 : topology[layerNum + 1];
 
 		std::cout << "Layer " << layerNum << std::endl;
 
@@ -61,8 +61,8 @@ inline void Net<T>::FeedForward(const std::vector<T>& inputVals)
 	//foward propagate to next layers
 	for (size_t layerNum = 1; layerNum < layers_.size(); ++layerNum)
 	{
-		Layer &prevLayer = layers_[layerNum -1];
-		for (size_t n = 0; n < layers_[n].size()-1; ++n)
+		Layer &prevLayer = layers_[layerNum - 1];
+		for (size_t n = 0; n < layers_[layerNum].size()-1; ++n)
 		{
 			layers_[layerNum][n].FeedForward(prevLayer);
 		}
@@ -73,6 +73,7 @@ template<typename T>
 inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 {
 	Layer &outputLayer = layers_.back();
+	error_ = 0.0f;
 
 	//calculate overall net error (RMS of output neuron errors), excluding bias
 	for (size_t n = 0; n < outputLayer.size()-1; ++n)
@@ -105,12 +106,12 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 	}
 	
 	//update connection weights for all layers, excluding output layer ofc
-	for (size_t layerNum = layers_.size() - 1; layerNum < 0; --layerNum)
+	for (size_t layerNum = layers_.size() - 1; layerNum > 0; --layerNum)
 	{
 		Layer &layer = layers_[layerNum];
 		Layer &prevLayer = layers_[layerNum-1];
 
-		for (size_t n = 0; n < layer.size()-1; n++)
+		for (size_t n = 0; n < layer.size()-1; ++n)
 		{
 			layer[n].UpdateInputWeights(prevLayer);
 		}
