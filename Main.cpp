@@ -59,6 +59,9 @@ int main()
 
 	int trainingPass = 0;
 
+	std::FILE *stream;
+	freopen_s(&stream, "Result.txt", "w", stdout);
+
 	while (!trainData.isEof())
 	{
 		++trainingPass;
@@ -88,6 +91,8 @@ int main()
 	}
 
 	std::cout << std::endl << "That's it!" << std::endl;
+	
+	fclose(stdout);
 
 	
 	/*std::vector<unsigned int> topology; 
