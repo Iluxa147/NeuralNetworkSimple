@@ -45,50 +45,54 @@ void CreateTrainingDataFile()
 #endif // TmpDataCreate
 
 #ifdef TmpDataCreateJSON
-rapidjson::Document CreateTrainingDataJSON()
+void CreateTrainingDataJSON()
 {
 	std::FILE *f;
 	fopen_s(&f, "TrainingData.json", "wb");
 
-	rapidjson::Value json_val;
+	rapidjson::StringBuffer strBuf;
+	rapidjson::Writer<rapidjson::StringBuffer> stringWriter(strBuf);
 
 	rapidjson::Document doc;
+	rapidjson::Value json_val;
 	auto& allocator = doc.GetAllocator();
 
-	doc.SetObject();
+	stringWriter.StartObject();
+	stringWriter.Key("topology");
+	stringWriter.StartArray();
+	stringWriter.Uint(2);
+	stringWriter.Uint(4);
+	stringWriter.Uint(1);
+	stringWriter.EndArray();
 
-	json_val.SetArray()
-		.PushBack(2, allocator)
-		.PushBack(4, allocator)
-		.PushBack(1, allocator);
+	stringWriter.Key("IN_OUT");
+	stringWriter.StartArray();
 
-	doc.AddMember("topology", json_val, allocator);
-
-	/*for (int i = 1; i >= 0; --i)
+	for (int i = 2; i > 0; --i)
 	{
 		int n1 = rand() % 2;
 		int n2 = rand() % 2;
 		int t = n1^n2; // 0 or 1
 
-		json_val.SetArray()
-			.PushBack(static_cast<double>(n1), allocator)
-			.PushBack(static_cast<double>(n2), allocator);
-		doc.AddMember("in", json_val, allocator);
+		stringWriter.StartObject();
+		stringWriter.Key("in");
+		stringWriter.StartArray();
+		stringWriter.Double(n1);
+		stringWriter.Double(n2);
+		stringWriter.EndArray();
 
-		json_val.SetDouble(static_cast<double>(t));
-		doc.AddMember("out", json_val, allocator);
-	}*/
+		stringWriter.Key("out");
+		stringWriter.Double(t);
+		stringWriter.EndObject();
 
+	}
+	stringWriter.EndArray();
+	stringWriter.EndObject();
 
+	fwrite(strBuf.GetString(), 1, strBuf.GetSize(), f);
 
-	char writeBuffer[256];
-	rapidjson::FileWriteStream os(f, writeBuffer, sizeof(writeBuffer));
-	
-	rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-	doc.Accept(writer);
 	fclose(f);
 
-	return doc;
 }
 #endif //TmpDataCreateJSON
 
