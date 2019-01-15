@@ -1,8 +1,19 @@
 #include "TrainingData.h"
 
+#include "rapidjson/document.h"
+#include "rapidjson/filereadstream.h"
+
 TrainingData::TrainingData(const std::string filename)
 {
 	trainingDataFile_.open(filename.c_str());
+	
+	fopen_s(&trainingDataJSON_, "TrainingData.json", "rb");
+}
+
+TrainingData::~TrainingData()
+{
+	fclose(trainingDataJSON_);
+	delete trainingDataJSON_;
 }
 
 void TrainingData::GetTopology(std::vector<unsigned int>& topology)
@@ -28,6 +39,21 @@ void TrainingData::GetTopology(std::vector<unsigned int>& topology)
 
 	return;
 }
+
+void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology)
+{
+
+	char readBuffer[5];
+	rapidjson::FileReadStream is(trainingDataJSON_, readBuffer, sizeof(readBuffer));
+	//is.Take();
+	rapidjson::Document d;
+	d.ParseStream(is);
+
+	//rapidjson::Value doc;
+
+	//topology.push_back(doc["topology"].GetUint);
+}
+
 
 unsigned int TrainingData::GetNextInputs(std::vector<double>& inputVals)
 {

@@ -8,9 +8,40 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/writer.h"
+#include "rapidjson/reader.h"
+
+using namespace rapidjson;
+using namespace std;
+
+struct MyHandlerr {
+	bool Null() { cout << "Null()" << endl; return true; }
+	bool Bool(bool b) { cout << "Bool(" << boolalpha << b << ")" << endl; return true; }
+	bool Int(int i) { cout << "Int(" << i << ")" << endl; return true; }
+	bool Uint(unsigned u) { cout << "Uint(" << u << ")" << endl; return true; }
+	bool Int64(int64_t i) { cout << "Int64(" << i << ")" << endl; return true; }
+	bool Uint64(uint64_t u) { cout << "Uint64(" << u << ")" << endl; return true; }
+	bool Double(double d) { cout << "Double(" << d << ")" << endl; return true; }
+	bool RawNumber(const char* str, SizeType length, bool copy) {
+		cout << "Number(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
+		return true;
+	}
+	bool String(const char* str, SizeType length, bool copy) {
+		cout << "String(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
+		return true;
+	}
+	bool StartObject() { cout << "StartObject()" << endl; return true; }
+	bool Key(const char* str, SizeType length, bool copy) {
+		cout << "Key(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
+		return true;
+	}
+	bool EndObject(SizeType memberCount) { cout << "EndObject(" << memberCount << ")" << endl; return true; }
+	bool StartArray() { cout << "StartArray()" << endl; return true; }
+	bool EndArray(SizeType elementCount) { cout << "EndArray(" << elementCount << ")" << endl; return true; }
+};
+
 
 //#define TmpDataCreate
-#define TmpDataCreateJSON
+//#define TmpDataCreateJSON
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
 {
@@ -98,6 +129,14 @@ void CreateTrainingDataJSON()
 
 int main()
 {
+	const char json[] = " { \"hello\" : \"world\", \"t\" : true , \"f\" : false, \"n\": null, \"i\":123, \"pi\": 3.1416, \"a\":[1, 2, 3, 4] } ";
+
+	MyHandlerr handler;
+	Reader reader;
+	StringStream ss(json);
+	reader.Parse(ss, handler);
+
+
 #ifdef TmpDataCreate
 	CreateTrainingDataFile();
 #endif // TmpDataCreate
@@ -112,7 +151,7 @@ int main()
 	
 	std::vector<unsigned int> topology;
 	trainData.GetTopology(topology);
-	
+
 	Net<double> myNet(topology);
 	
 	std::vector<double> inputVals;
@@ -123,6 +162,10 @@ int main()
 
 	std::FILE *stream;
 	freopen_s(&stream, "Result.txt", "w", stdout);
+
+	//WIP generation module
+	double tmpError = 100.0f;
+	Net<double> tmpNet(topology);
 
 	while (!trainData.isEof())
 	{
@@ -150,8 +193,14 @@ int main()
 
 		//report how well the training is working, average over recent samples
 		std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
-	}
 
+		if (myNet.GetRecentAverageError() < tmpError)
+		{
+			tmpError = myNet.GetRecentAverageError();
+			tmpNet = myNet;
+		}
+	}
+	auto gen = tmpNet;
 	std::cout << std::endl << "That's it!" << std::endl;
 	
 	fclose(stdout);
