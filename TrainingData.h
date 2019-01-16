@@ -28,7 +28,7 @@ public:
 	~TrainingData();
 	bool isEof() { return trainingDataFile_.eof(); }
 	void GetTopology(std::vector<unsigned int>& topology);
-	
+	void RewindDatatFile();
 	void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology);
 
 	// returns the number of input values read from the file

@@ -13,13 +13,16 @@ public:
 	void FeedForward(const std::vector<T> &inputVals );
 	void BackProp(const std::vector<T>& targetVals);
 	void GetResults(std::vector<T>& resultVals) const;
-	double GetRecentAverageError() const;
+	double GetRecentAverageError() const { return recentAverageError_; };
+	void SetGeneration(unsigned int num) { generation_ = num; };
+	unsigned int GetGeneration() const { return generation_; };
 
 private:
 	std::vector<Layer> layers_; //[numLayer] [numNeuron]
 	double error_;
 	double recentAverageError_;
 	double recentAverageSmoothingFacor_;
+	unsigned int generation_ = 0;
 };
 
 template<typename T>
@@ -128,10 +131,4 @@ inline void Net<T>::GetResults(std::vector<T>& resultVals) const
 		resultVals.push_back(layers_.back()[n].GetOutputVal());
 	}
 
-}
-
-template<typename T>
-inline double Net<T>::GetRecentAverageError() const
-{
-	return recentAverageError_;
 }

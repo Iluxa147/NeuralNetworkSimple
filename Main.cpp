@@ -166,63 +166,52 @@ int main()
 	//WIP generation module
 	double tmpError = 100.0f;
 	Net<double> tmpNet(topology);
+	Net<double> currentNet = tmpNet;
 
-	while (!trainData.isEof())
+
+	for (size_t i = 0; i < 3; ++i)
 	{
-		++trainingPass;
-		std::cout << std::endl << "Pass " << trainingPass;
 
-		//get new input data and feed forward
-		if (trainData.GetNextInputs(inputVals) != topology[0])
+		while (!trainData.isEof())
 		{
-			break;
+			++trainingPass;
+			std::cout << std::endl << "Pass " << trainingPass;
+
+			//get new input data and feed forward
+			if (trainData.GetNextInputs(inputVals) != topology[0])
+			{
+				break;
+			}
+			ShowVectorVals(": Inputs: ", inputVals);
+			myNet.FeedForward(inputVals);
+
+			//collect net's actual results
+			myNet.GetResults(resultVals);
+			ShowVectorVals("Outputs: ", resultVals);
+
+			//train net what outputs should have been
+			trainData.GetTargetOutputs(targetVals);
+			ShowVectorVals("Targets:", targetVals);
+			assert(targetVals.size() == topology.back());
+
+			myNet.BackProp(targetVals);
+
+			//report how well the training is working, average over recent samples
+			std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
+
+			if (fabs(myNet.GetRecentAverageError()) < fabs(tmpError))
+			{
+				tmpError = myNet.GetRecentAverageError();
+				tmpNet = myNet;
+			}
 		}
-		ShowVectorVals(": Inputs: ", inputVals);
-		myNet.FeedForward(inputVals);
-
-		//collect net's actual results
-		myNet.GetResults(resultVals);
-		ShowVectorVals("Outputs: ", resultVals);
-
-		//train net what outputs should have been
-		trainData.GetTargetOutputs(targetVals);
-		ShowVectorVals("Targets:", targetVals);
-		assert(targetVals.size() == topology.back());
-
-		myNet.BackProp(targetVals);
-
-		//report how well the training is working, average over recent samples
-		std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
-
-		if (myNet.GetRecentAverageError() < tmpError)
-		{
-			tmpError = myNet.GetRecentAverageError();
-			tmpNet = myNet;
-		}
+		tmpNet.SetGeneration(i);
+		myNet = tmpNet;
+ 		trainData.RewindDatatFile();
 	}
-	auto gen = tmpNet;
 	std::cout << std::endl << "That's it!" << std::endl;
 	
 	fclose(stdout);
-
-	
-	/*std::vector<unsigned int> topology; 
-
-	std::vector<double> inputVals;
-	std::vector<double> targetVals;
-	std::vector<double> resultVals;
-	
-	topology.push_back(3);
-	topology.push_back(2);
-	topology.push_back(1);
-
-	Net<double> myNet(topology);
-
-
-
-	myNet.BackProp(targetVals);
-
-	myNet.GetResults(resultVals);*/
 
 	system("pause");
 	return 0;

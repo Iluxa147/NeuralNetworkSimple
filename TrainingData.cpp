@@ -40,6 +40,12 @@ void TrainingData::GetTopology(std::vector<unsigned int>& topology)
 	return;
 }
 
+void TrainingData::RewindDatatFile()
+{
+	trainingDataFile_.clear();
+	trainingDataFile_.seekg(0);
+}
+
 void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology)
 {
 
@@ -66,6 +72,20 @@ unsigned int TrainingData::GetNextInputs(std::vector<double>& inputVals)
 	std::string label;
 	ss >> label;
 
+	if (label == "topology:")
+	{
+		while (!ss.eof())
+		{
+			unsigned int n;
+			ss >> n;
+		}
+		std::getline(trainingDataFile_, line);
+		const char* c = line.c_str();
+		ss.clear();
+		ss.write(c, sizeof(line));
+		ss.seekg(0);
+		ss >> label;
+	}
 
 	if (label.compare("in:") == 0)
 	{
