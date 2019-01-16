@@ -13,32 +13,6 @@
 using namespace rapidjson;
 using namespace std;
 
-struct MyHandlerr {
-	bool Null() { cout << "Null()" << endl; return true; }
-	bool Bool(bool b) { cout << "Bool(" << boolalpha << b << ")" << endl; return true; }
-	bool Int(int i) { cout << "Int(" << i << ")" << endl; return true; }
-	bool Uint(unsigned u) { cout << "Uint(" << u << ")" << endl; return true; }
-	bool Int64(int64_t i) { cout << "Int64(" << i << ")" << endl; return true; }
-	bool Uint64(uint64_t u) { cout << "Uint64(" << u << ")" << endl; return true; }
-	bool Double(double d) { cout << "Double(" << d << ")" << endl; return true; }
-	bool RawNumber(const char* str, SizeType length, bool copy) {
-		cout << "Number(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
-		return true;
-	}
-	bool String(const char* str, SizeType length, bool copy) {
-		cout << "String(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
-		return true;
-	}
-	bool StartObject() { cout << "StartObject()" << endl; return true; }
-	bool Key(const char* str, SizeType length, bool copy) {
-		cout << "Key(" << str << ", " << length << ", " << boolalpha << copy << ")" << endl;
-		return true;
-	}
-	bool EndObject(SizeType memberCount) { cout << "EndObject(" << memberCount << ")" << endl; return true; }
-	bool StartArray() { cout << "StartArray()" << endl; return true; }
-	bool EndArray(SizeType elementCount) { cout << "EndArray(" << elementCount << ")" << endl; return true; }
-};
-
 
 //#define TmpDataCreate
 //#define TmpDataCreateJSON
@@ -61,7 +35,7 @@ void CreateTrainingDataFile()
 
 	//XOR - two inputs/one output
 	std::cout << "topology: 2 4 1" << std::endl;
-	for (int i = 2000; i >= 0; --i)
+	for (int i = 2000; i > 0; --i)
 	{
 		//int n2 = (int)(2.0f*rand() / double(RAND_MAX));
 		int n1 = rand() % 2;
@@ -129,13 +103,6 @@ void CreateTrainingDataJSON()
 
 int main()
 {
-	const char json[] = " { \"hello\" : \"world\", \"t\" : true , \"f\" : false, \"n\": null, \"i\":123, \"pi\": 3.1416, \"a\":[1, 2, 3, 4] } ";
-
-	MyHandlerr handler;
-	Reader reader;
-	StringStream ss(json);
-	reader.Parse(ss, handler);
-
 
 #ifdef TmpDataCreate
 	CreateTrainingDataFile();
@@ -165,52 +132,80 @@ int main()
 
 	//WIP generation module
 	double tmpError = 100.0f;
+	bool isTheBest;
 	Net<double> tmpNet(topology);
 	Net<double> currentNet = tmpNet;
 
 
-	for (size_t i = 0; i < 3; ++i)
+	for (size_t i = 0; i < 100; ++i)
 	{
 
 		while (!trainData.isEof())
 		{
-			++trainingPass;
-			std::cout << std::endl << "Pass " << trainingPass;
 
 			//get new input data and feed forward
 			if (trainData.GetNextInputs(inputVals) != topology[0])
 			{
 				break;
 			}
-			ShowVectorVals(": Inputs: ", inputVals);
+
+			++trainingPass;
+			//std::cout << std::endl << "Pass " << trainingPass;
+
+			//ShowVectorVals(": Inputs: ", inputVals);
 			myNet.FeedForward(inputVals);
 
 			//collect net's actual results
 			myNet.GetResults(resultVals);
-			ShowVectorVals("Outputs: ", resultVals);
+			//ShowVectorVals("Outputs: ", resultVals);
 
 			//train net what outputs should have been
 			trainData.GetTargetOutputs(targetVals);
-			ShowVectorVals("Targets:", targetVals);
+			//ShowVectorVals("Targets:", targetVals);
 			assert(targetVals.size() == topology.back());
 
 			myNet.BackProp(targetVals);
 
 			//report how well the training is working, average over recent samples
-			std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
+			//std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
 
 			if (fabs(myNet.GetRecentAverageError()) < fabs(tmpError))
 			{
 				tmpError = myNet.GetRecentAverageError();
 				tmpNet = myNet;
+				isTheBest = true;
 			}
 		}
+		/*auto a = fabs(myNet.GetRecentAverageError());
+		auto b = fabs(tmpError);
+
+		auto z = 6.6215111956237598e-15;
+		auto x = 4.0647951209393796e-06;
+		auto c = z < x;
+		long double a = 0.000000081372668603307829;
+		a *= a;*/
+		
+		auto a = fabs(myNet.GetRecentAverageError());
+		auto b = fabs(tmpError);
+
 		tmpNet.SetGeneration(i);
-		myNet = tmpNet;
+		if (isTheBest)
+		{
+			myNet = tmpNet;
+			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
+			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
+
+		}
  		trainData.RewindDatatFile();
+
+		isTheBest = false;
+
 	}
-	std::cout << std::endl << "That's it!" << std::endl;
-	
+	//std::cout << std::endl << "Done!" << std::endl;
+
+	//std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
+	//std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
+
 	fclose(stdout);
 
 	system("pause");

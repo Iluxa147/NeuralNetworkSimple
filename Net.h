@@ -82,6 +82,10 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 	for (size_t n = 0; n < outputLayer.size()-1; ++n)
 	{
 		double delata = targetVals[n] - outputLayer[n].GetOutputVal();
+		if (fabs(delata) <= 0.0000000813727)
+		{
+			auto a = 1;
+		}
 		error_ += delata * delata;
 	}
 	error_ /= outputLayer.size()-1;
@@ -89,7 +93,10 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 
 	//recent average measurement
 	recentAverageError_ = (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);
-
+	if (fabs(recentAverageError_) <= 0.0000000813727)
+	{
+		auto a = 1;
+	}
 	//calculate output layer gradients, excluding bias
 	for (size_t n = 0; n < outputLayer.size() - 1; ++n)
 	{
