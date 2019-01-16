@@ -93,6 +93,49 @@ void Neuron::UpdateInputWeights(Layer & prevLayer)
 
 }
 
+rapidjson::Document Neuron::SerializeToJSON() const
+{
+	rapidjson::Value json_val;
+	rapidjson::Document doc;
+
+	auto& allocator = doc.GetAllocator();
+	doc.SetObject();
+
+	json_val.SetDouble(eta_);
+	doc.AddMember("eta_", json_val, allocator);
+
+	json_val.SetDouble(alpha_);
+	doc.AddMember("alpha_", json_val, allocator);
+
+	json_val.SetUint(neuronIndex_);
+	doc.AddMember("neuronIndex_", json_val, allocator);
+
+	json_val.SetDouble(outputVal_);
+	doc.AddMember("outputVal_", json_val, allocator);
+
+	json_val.SetDouble(gradient_);
+	doc.AddMember("gradient_", json_val, allocator);
+
+
+	rapidjson::Value weightsArray(rapidjson::kArrayType);
+	for (size_t i = 0; i < outputWeights_.size(); ++i)
+	{
+		rapidjson::Value weightArray(rapidjson::kArrayType);
+
+		json_val.SetObject();
+		json_val.AddMember("weight", outputWeights_[i].weight, allocator);
+		weightArray.PushBack(json_val, allocator);
+
+		json_val.SetObject();
+		json_val.AddMember("deltaWeight", outputWeights_[i].deltaWeight, allocator);
+		weightArray.PushBack(json_val, allocator);
+
+		weightsArray.PushBack(weightArray, allocator);
+	}
+	doc.AddMember("outputWeights_", weightsArray, allocator);
+	return doc;
+}
+
 
 double Neuron::RandomWeight()
 {

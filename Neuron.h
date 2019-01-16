@@ -2,6 +2,12 @@
 #include <vector>
 #include <random>
 
+#include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/reader.h"
+
+
 class Neuron;
 typedef std::vector<Neuron> Layer;
 
@@ -23,6 +29,7 @@ public:
 	void CalcOutputGradients(double targetVal);
 	void CalcHiddenGradients(const Layer& nextLayer);
 	void UpdateInputWeights(Layer& prevLayer);
+	rapidjson::Document SerializeToJSON() const;
 
 private:
 	static double RandomWeight(); //TODO more uniform distribution

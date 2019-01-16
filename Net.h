@@ -4,6 +4,14 @@
 #include <assert.h>
 #include "Neuron.h"
 
+#include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include <rapidjson/filereadstream.h>
+//#include "rapidjson/writer.h"
+//#include "rapidjson/reader.h"
+
+//#define Debug
+
 template <typename T>
 class Net
 {
@@ -16,6 +24,8 @@ public:
 	double GetRecentAverageError() const { return recentAverageError_; };
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
+	void SerializeToJSON(std::string filename) const;
+	void DeserializeFromJSON(std::string filename);
 
 private:
 	std::vector<Layer> layers_; //[numLayer] [numNeuron]
@@ -82,10 +92,12 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 	for (size_t n = 0; n < outputLayer.size()-1; ++n)
 	{
 		double delata = targetVals[n] - outputLayer[n].GetOutputVal();
+#ifdef Debug
 		if (fabs(delata) <= 0.0000000813727)
 		{
 			auto a = 1;
 		}
+#endif
 		error_ += delata * delata;
 	}
 	error_ /= outputLayer.size()-1;
@@ -93,10 +105,13 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 
 	//recent average measurement
 	recentAverageError_ = (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);
+#ifdef Debug
 	if (fabs(recentAverageError_) <= 0.0000000813727)
 	{
 		auto a = 1;
 	}
+#endif
+
 	//calculate output layer gradients, excluding bias
 	for (size_t n = 0; n < outputLayer.size() - 1; ++n)
 	{
@@ -138,4 +153,71 @@ inline void Net<T>::GetResults(std::vector<T>& resultVals) const
 		resultVals.push_back(layers_.back()[n].GetOutputVal());
 	}
 
+}
+
+template<typename T>
+inline void Net<T>::SerializeToJSON(std::string filename) const
+{
+	rapidjson::Value json_val;
+	rapidjson::Document doc;
+
+	auto& allocator = doc.GetAllocator();
+	doc.SetObject();
+
+	json_val.SetUint(generation_);
+	doc.AddMember("generation_", json_val, allocator);
+
+	json_val.SetDouble(recentAverageError_);
+	doc.AddMember("recentAverageError_", json_val, allocator);
+
+	rapidjson::Value layersArray(rapidjson::kArrayType);
+
+	for (size_t i = 0; i < layers_.size(); ++i)
+	{
+		rapidjson::Value neuronsArray(rapidjson::kArrayType);
+		for (size_t n = 0; n < layers_[i].size(); ++n)
+		{
+			json_val.CopyFrom(layers_[i][n].SerializeToJSON(), allocator);
+			neuronsArray.PushBack(json_val, allocator);
+		}
+		layersArray.PushBack(neuronsArray, allocator);
+	}
+	doc.AddMember("Layers", layersArray, allocator);
+
+	std::FILE *f;
+	fopen_s(&f, filename.c_str(), "wb");
+
+	char writeBuffer[65536];
+	FileWriteStream os(f, writeBuffer, sizeof(writeBuffer));
+	Writer<FileWriteStream> writer(os);
+
+	doc.Accept(writer);
+	fclose(f);
+}
+
+template<typename T>
+inline void Net<T>::DeserializeFromJSON(std::string filename)
+{
+	std::FILE *f;
+	fopen_s(&f, "D:\\cpp\\NeuralNetworkSimple\\zzz.txt", "rb");
+	//fopen_s(&f, filename.c_str(), "rb");
+
+
+	std::ifstream stream;
+
+	std::string line;
+	std::string string;
+
+	stream.open("zzz.txt");
+	std::getline(stream, line);
+	std::stringstream ss(line);
+	ss >> string;
+
+
+	char buffer[65536];
+	rapidjson::FileReadStream is(f, buffer, sizeof(buffer));
+	rapidjson::Document doc;
+	doc.ParseStream<0, UTF8<>, rapidjson::FileReadStream>(is);
+
+	fclose(f);
 }

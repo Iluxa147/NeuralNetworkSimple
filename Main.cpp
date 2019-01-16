@@ -137,7 +137,7 @@ int main()
 	Net<double> currentNet = tmpNet;
 
 
-	for (size_t i = 0; i < 100; ++i)
+	for (size_t i = 0; i < 1; ++i)
 	{
 
 		while (!trainData.isEof())
@@ -194,6 +194,7 @@ int main()
 			myNet = tmpNet;
 			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
 			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
+			myNet.SerializeToJSON("BestNet.json");
 
 		}
  		trainData.RewindDatatFile();
@@ -205,7 +206,7 @@ int main()
 
 	//std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
 	//std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
-
+	myNet.DeserializeFromJSON("BestNet.json");
 	fclose(stdout);
 
 	system("pause");
