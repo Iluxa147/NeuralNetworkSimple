@@ -206,7 +206,11 @@ int main()
 
 	//std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
 	//std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
-	myNet.DeserializeFromJSON("BestNet.json");
+	//myNet.DeserializeFromJSON("BestNet.json");
+	
+	Net<double> newNet("BestNet.json");
+
+
 	fclose(stdout);
 
 	system("pause");

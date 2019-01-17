@@ -4,8 +4,8 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/reader.h"
+//#include "rapidjson/writer.h"
+//#include "rapidjson/reader.h"
 
 
 class Neuron;
@@ -22,6 +22,8 @@ class Neuron
 public:
 	//Neuron();
 	Neuron(unsigned int numOutputs, unsigned int neuronIndex);
+	Neuron(const rapidjson::Document& doc, unsigned int layerNum, unsigned int neuronIndex, unsigned int numOutputs); //from JSON constructor (deserializer)
+
 	void SetOutputVal(double val);
 	double GetOutputVal() const;
 	double SumDOW(const Layer& nextLayer) const;
@@ -30,6 +32,7 @@ public:
 	void CalcHiddenGradients(const Layer& nextLayer);
 	void UpdateInputWeights(Layer& prevLayer);
 	rapidjson::Document SerializeToJSON() const;
+	// Neuron DeserializeFromJSON(const rapidjson::Value& doc);
 
 private:
 	static double RandomWeight(); //TODO more uniform distribution

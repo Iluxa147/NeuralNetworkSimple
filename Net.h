@@ -17,6 +17,7 @@ class Net
 {
 public:
 	Net(const std::vector<unsigned int>& topology);
+	Net(std::string filename); //from JSON constructor (deserializer)
 
 	void FeedForward(const std::vector<T> &inputVals );
 	void BackProp(const std::vector<T>& targetVals);
@@ -25,7 +26,7 @@ public:
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
 	void SerializeToJSON(std::string filename) const;
-	void DeserializeFromJSON(std::string filename);
+	//void DeserializeFromJSON(std::string filename);
 
 private:
 	std::vector<Layer> layers_; //[numLayer] [numNeuron]
@@ -44,7 +45,6 @@ inline Net<T>::Net(const std::vector<unsigned int>& topology)
 	{
 		//fill net with layers
 		layers_.push_back(Layer());
-
 		//outputs connections quantity for each neuron in that particular layer. Ofc, no outputs at output layer
 		unsigned int numOutputs = layerNum == topology.size() - 1 ? 0 : topology[layerNum + 1];
 
@@ -58,6 +58,55 @@ inline Net<T>::Net(const std::vector<unsigned int>& topology)
 		}
 		layers_.back().back().SetOutputVal(1.0f); //set value for bias neuron in output layer
 	}
+}
+
+template<typename T>
+inline Net<T>::Net(std::string filename)
+{
+	std::FILE *f;
+	fopen_s(&f, filename.c_str(), "rb");
+
+	char buffer[256];
+	rapidjson::FileReadStream is(f, buffer, sizeof(buffer));
+	rapidjson::Document doc;
+	doc.ParseStream(is);
+
+	generation_ = doc["generation_"].GetUint();
+	recentAverageError_ = doc["recentAverageError_"].GetDouble();
+
+	unsigned int numLayers = doc["Layers"].Size();
+
+	for (size_t layerNum = 0; layerNum < numLayers; ++layerNum)
+	{
+		//fill net with layers
+		layers_.push_back(Layer());
+
+		//outputs connections quantity for each neuron in that particular layer. Ofc, no outputs at output layer
+		unsigned int numOutputs = layerNum == numLayers - 1 ? 0 : doc["Layers"][layerNum+1].Size()-1;
+		
+		//fill current layer with neurons + bias neuron
+		for (size_t neuronNum = 0; neuronNum < doc["Layers"][layerNum].Size(); ++neuronNum)
+		{
+			auto a = doc["Layers"][layerNum][neuronNum]["outputWeights_"].Size();
+			assert(numOutputs == doc["Layers"][layerNum][neuronNum]["outputWeights_"].Size());
+			assert(neuronNum == doc["Layers"][layerNum][neuronNum]["neuronIndex_"].GetUint());
+
+			layers_.back().push_back(Neuron(doc, layerNum, neuronNum, numOutputs));
+		}
+	}
+	
+	/*std::vector<unsigned int> topology;
+
+	for (size_t i = 0; i < doc["Layers"].Size(); ++i)
+	{
+		//add neurons, excluding bias neuron
+		topology.push_back(doc["Layers"][i].Size() - 1);
+	}*/
+
+	//doc.ParseStream<0, UTF8<>, rapidjson::FileReadStream>(is);
+
+	fclose(f);
+
 }
 
 template<typename T>
@@ -192,32 +241,5 @@ inline void Net<T>::SerializeToJSON(std::string filename) const
 	Writer<FileWriteStream> writer(os);
 
 	doc.Accept(writer);
-	fclose(f);
-}
-
-template<typename T>
-inline void Net<T>::DeserializeFromJSON(std::string filename)
-{
-	std::FILE *f;
-	fopen_s(&f, "D:\\cpp\\NeuralNetworkSimple\\zzz.txt", "rb");
-	//fopen_s(&f, filename.c_str(), "rb");
-
-
-	std::ifstream stream;
-
-	std::string line;
-	std::string string;
-
-	stream.open("zzz.txt");
-	std::getline(stream, line);
-	std::stringstream ss(line);
-	ss >> string;
-
-
-	char buffer[65536];
-	rapidjson::FileReadStream is(f, buffer, sizeof(buffer));
-	rapidjson::Document doc;
-	doc.ParseStream<0, UTF8<>, rapidjson::FileReadStream>(is);
-
 	fclose(f);
 }

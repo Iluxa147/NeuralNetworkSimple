@@ -23,6 +23,21 @@ Neuron::Neuron(unsigned int numOutputs, unsigned int neuronIndex)
 #endif // DEBUG
 }
 
+Neuron::Neuron(const rapidjson::Document & doc, unsigned int layerNum, unsigned int neuronIndex, unsigned int numOutputs)
+{
+	neuronIndex_ = neuronIndex;
+	outputVal_ = doc["Layers"][layerNum][neuronIndex]["outputVal_"].GetDouble();
+	gradient_ = doc["Layers"][layerNum][neuronIndex]["gradient_"].GetDouble();
+	
+	auto a = doc["Layers"][layerNum][neuronIndex]["outputWeights_"].Size();
+	for (size_t i = 0; i < numOutputs; ++i)
+	{
+		outputWeights_.push_back(Connection());
+		outputWeights_[i].weight = doc["Layers"][layerNum][neuronIndex]["outputWeights_"][i]["weight"].GetDouble();
+		outputWeights_[i].deltaWeight = doc["Layers"][layerNum][neuronIndex]["outputWeights_"][i]["deltaWeight"].GetDouble();
+	}
+}
+
 void Neuron::SetOutputVal(double val)
 {
 	outputVal_ = val;
@@ -121,8 +136,29 @@ rapidjson::Document Neuron::SerializeToJSON() const
 	for (size_t i = 0; i < outputWeights_.size(); ++i)
 	{
 		rapidjson::Value weightArray(rapidjson::kArrayType);
+		weightArray.SetObject();
+		json_val.SetDouble(outputWeights_[i].weight);
+		weightArray.AddMember("weight", json_val, allocator);
 
-		json_val.SetObject();
+		json_val.SetDouble(outputWeights_[i].deltaWeight);
+		weightArray.AddMember("deltaWeight", json_val, allocator);
+
+
+		/*rapidjson::Value weightArray(rapidjson::kArrayType);
+		json_val.SetDouble(outputWeights_[i].weight);
+		weightArray.PushBack(json_val, allocator);
+
+		json_val.SetDouble(outputWeights_[i].deltaWeight);
+		weightArray.PushBack(json_val, allocator);*/
+
+		weightsArray.PushBack(weightArray, allocator);
+
+		/*json_val.SetDouble(outputWeights_[i].deltaWeight);
+		json_val.AddMember("deltaWeight", json_val, allocator);
+		weightArray.PushBack(json_val, allocator);
+
+
+		/*json_val.SetObject();
 		json_val.AddMember("weight", outputWeights_[i].weight, allocator);
 		weightArray.PushBack(json_val, allocator);
 
@@ -130,11 +166,15 @@ rapidjson::Document Neuron::SerializeToJSON() const
 		json_val.AddMember("deltaWeight", outputWeights_[i].deltaWeight, allocator);
 		weightArray.PushBack(json_val, allocator);
 
-		weightsArray.PushBack(weightArray, allocator);
+		weightsArray.PushBack(weightArray, allocator);*/
 	}
 	doc.AddMember("outputWeights_", weightsArray, allocator);
 	return doc;
 }
+
+/*Neuron Neuron::DeserializeFromJSON(const rapidjson::Value & doc)
+{
+}*/
 
 
 double Neuron::RandomWeight()
