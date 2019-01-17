@@ -16,6 +16,8 @@ using namespace std;
 
 //#define TmpDataCreate
 //#define TmpDataCreateJSON
+//#define Training
+#define TryIt
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
 {
@@ -112,15 +114,16 @@ int main()
 	CreateTrainingDataJSON();
 #endif // TmpDataCreateJSON
 
+#ifdef Training
+
 	TrainingData trainData("TrainingData.txt");
 
 	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
-	
 	std::vector<unsigned int> topology;
 	trainData.GetTopology(topology);
 
 	Net<double> myNet(topology);
-	
+
 	std::vector<double> inputVals;
 	std::vector<double> targetVals;
 	std::vector<double> resultVals;
@@ -137,7 +140,7 @@ int main()
 	Net<double> currentNet = tmpNet;
 
 
-	for (size_t i = 0; i < 1; ++i)
+	for (size_t i = 0; i < 70000; ++i)
 	{
 
 		while (!trainData.isEof())
@@ -184,7 +187,7 @@ int main()
 		auto c = z < x;
 		long double a = 0.000000081372668603307829;
 		a *= a;*/
-		
+
 		auto a = fabs(myNet.GetRecentAverageError());
 		auto b = fabs(tmpError);
 
@@ -197,21 +200,49 @@ int main()
 			myNet.SerializeToJSON("BestNet.json");
 
 		}
- 		trainData.RewindDatatFile();
+		trainData.RewindDatatFile();
 
 		isTheBest = false;
 
 	}
-	//std::cout << std::endl << "Done!" << std::endl;
 
 	//std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
 	//std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
 	//myNet.DeserializeFromJSON("BestNet.json");
-	
-	Net<double> newNet("BestNet.json");
 
+	//Net<double> newNet("BestNet.json");
 
 	fclose(stdout);
+
+#endif //Training
+	
+#ifdef TryIt
+
+	Net<double> newNet("BestNet.json");
+
+	while (std::cin)
+	{
+		unsigned int a, b;
+		std::cout << "Input 2 bin numbers for neuroXOR!))" << std::endl;
+		std::cin >> a >> b;
+
+		std::vector<double> inputVals;
+		std::vector<double> resultVals;
+
+		inputVals.push_back(a);
+		inputVals.push_back(b);
+
+		newNet.FeedForward(inputVals);
+
+		newNet.GetResults(resultVals);
+
+		for (const auto &n : resultVals)
+		{
+			std::cout << "Answer is: " << fabs(roundf(n)) << std::endl;
+		}
+		std::cout << std::endl;
+	}
+#endif //TryIt
 
 	system("pause");
 	return 0;

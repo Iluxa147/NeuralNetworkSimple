@@ -14,3 +14,33 @@ Layer 2
 
 Generation 0
 Min Error! 8.60716e-06
+
+Generation 1
+Min Error! 4.0648e-06
+
+Generation 2
+Min Error! 8.13727e-08
+
+Generation 27
+Min Error! 5.46346e-08
+
+Generation 28
+Min Error! 2.10884e-08
+
+Generation 30
+Min Error! 1.42281e-08
+
+Generation 35
+Min Error! 2.09245e-10
+
+Generation 369
+Min Error! 1.32587e-11
+
+Generation 505
+Min Error! 5.43232e-13
+
+Generation 2607
+Min Error! 1.63314e-13
+
+Generation 7893
+Min Error! 1.20792e-13
