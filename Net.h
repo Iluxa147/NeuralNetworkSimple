@@ -7,8 +7,8 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include <rapidjson/filereadstream.h>
-//#include "rapidjson/writer.h"
-//#include "rapidjson/reader.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/reader.h"
 
 //#define Debug
 
@@ -17,15 +17,16 @@ class Net
 {
 public:
 	Net(const std::vector<unsigned int>& topology);
-	Net(std::string filename); //from JSON constructor (deserializer)
+	Net(std::string filename); //constructor from JSON (deserializer)
 
 	void FeedForward(const std::vector<T> &inputVals );
 	void BackProp(const std::vector<T>& targetVals);
 	void GetResults(std::vector<T>& resultVals) const;
+	void SerializeToJSON(std::string filename) const;
+	void Crossover(Net<T>& net);
 	double GetRecentAverageError() const { return recentAverageError_; };
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
-	void SerializeToJSON(std::string filename) const;
 	//void DeserializeFromJSON(std::string filename);
 
 private:
@@ -242,4 +243,20 @@ inline void Net<T>::SerializeToJSON(std::string filename) const
 
 	doc.Accept(writer);
 	fclose(f);
+}
+
+template<typename T>
+inline void Net<T>::Crossover(Net<T>& net)
+{
+	//topology must be the same (layers and neurons count)
+	assert(net.layers_.size() == layers_.size());
+	for (size_t i = 0; i < layers_.size(); ++i)
+	{
+		assert(net[i].size() == layers_[i].size());
+	}
+
+	std::random_device rd;
+	std::mt19937 rng(rd());
+	std::uniform_real_distribution<double> dst(0, 1);
+	dst(rng);
 }

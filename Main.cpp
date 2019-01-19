@@ -2,22 +2,26 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include <thread>
+#include <mutex>
+
 #include "Net.h"
 #include "TrainingData.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/reader.h"
+//#include "rapidjson/writer.h"
+//#include "rapidjson/reader.h"
 
 using namespace rapidjson;
-using namespace std;
+//using namespace std;
 
 
 //#define TmpDataCreate
 //#define TmpDataCreateJSON
-//#define Training
-#define TryIt
+#define Training
+//#define TryIt
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
 {
@@ -102,6 +106,20 @@ void CreateTrainingDataJSON()
 
 }
 #endif //TmpDataCreateJSON
+
+void f1(int& a, std::mutex& mtx)
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	a*=a;
+	std::cout << "f1 ";
+	std::cout << "ID is " << std::this_thread::get_id() << std::endl;
+
+}
+
+void f2()
+{
+	std::cout << "f2" << std::endl;
+}
 
 int main()
 {
@@ -238,11 +256,22 @@ int main()
 
 		for (const auto &n : resultVals)
 		{
-			std::cout << "Answer is: " << fabs(roundf(n)) << std::endl;
+			std::cout << "Answer is: " << fabs(roundf(n)) << " check: " << (a^b) << " actual output: " << n << std::endl;
 		}
 		std::cout << std::endl;
 	}
 #endif //TryIt
+
+	int a = 2;
+	std::mutex mtx;
+
+	std::thread t1(f1, std::ref(a), std::ref(mtx)); //f1 - pointer to function
+
+
+	t1.join(); //wait for t1 end
+	std::cout << a;
+	//t2.join();
+
 
 	system("pause");
 	return 0;

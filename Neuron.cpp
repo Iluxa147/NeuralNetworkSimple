@@ -1,5 +1,6 @@
 #include "Neuron.h"
 #include <iostream>
+#include <utility>
 
 #define DEBUG
 
@@ -36,6 +37,29 @@ Neuron::Neuron(const rapidjson::Document & doc, unsigned int layerNum, unsigned 
 		outputWeights_[i].weight = doc["Layers"][layerNum][neuronIndex]["outputWeights_"][i]["weight"].GetDouble();
 		outputWeights_[i].deltaWeight = doc["Layers"][layerNum][neuronIndex]["outputWeights_"][i]["deltaWeight"].GetDouble();
 	}
+}
+
+Neuron::Neuron(const Neuron & newNeuron) :
+	neuronIndex_(newNeuron.neuronIndex_),
+	outputVal_(newNeuron.outputVal_),
+	gradient_(newNeuron.gradient_),
+	outputWeights_(newNeuron.outputWeights_)
+{}
+
+Neuron::Neuron(Neuron && newNeuron):
+	neuronIndex_(std::move(newNeuron.neuronIndex_)),
+	outputVal_(std::move(newNeuron.outputVal_)),
+	gradient_(std::move(newNeuron.gradient_)),
+	outputWeights_(std::move(newNeuron.outputWeights_))
+{}
+
+Neuron & Neuron::operator=(const Neuron & newNeuron)
+{
+	neuronIndex_ = newNeuron.neuronIndex_;
+	outputVal_ = newNeuron.neuronIndex_;
+	gradient_ = newNeuron.gradient_;
+	outputWeights_ = newNeuron.outputWeights_;
+	return *this;
 }
 
 void Neuron::SetOutputVal(double val)
@@ -179,7 +203,11 @@ rapidjson::Document Neuron::SerializeToJSON() const
 
 double Neuron::RandomWeight()
 {
-	return rand() / double(RAND_MAX);
+	std::random_device rd;
+	std::mt19937 rng(rd());
+	std::uniform_real_distribution<double> dst(0, 1);
+	return dst(rng);
+	//return rand() / double(RAND_MAX);
 }
 
 double Neuron::TransferFunction(double val)
@@ -191,7 +219,7 @@ double Neuron::TransferFunction(double val)
 double Neuron::TransferFunctionDerivative(double val)
 {
 	//fas aproximate tanh function
-	return 1.0 - val*val;
+	return 1.0 - tanh(val)*tanh(val);
 }
 
 //Neuron::Neuron() {}

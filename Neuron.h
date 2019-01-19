@@ -4,14 +4,14 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
-//#include "rapidjson/writer.h"
-//#include "rapidjson/reader.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/reader.h"
 
 
 class Neuron;
 typedef std::vector<Neuron> Layer;
 
-struct Connection //TODO mb a class instead?
+struct Connection
 {
 	double weight;
 	double deltaWeight;
@@ -23,6 +23,10 @@ public:
 	//Neuron();
 	Neuron(unsigned int numOutputs, unsigned int neuronIndex);
 	Neuron(const rapidjson::Document& doc, unsigned int layerNum, unsigned int neuronIndex, unsigned int numOutputs); //from JSON constructor (deserializer)
+	Neuron(const Neuron& newNeuron);
+	Neuron(Neuron&& newNeuron);
+
+	Neuron& operator = (const Neuron& newNeuron);
 
 	void SetOutputVal(double val);
 	double GetOutputVal() const;
@@ -35,7 +39,7 @@ public:
 	// Neuron DeserializeFromJSON(const rapidjson::Value& doc);
 
 private:
-	static double RandomWeight(); //TODO more uniform distribution
+	static double RandomWeight();
 	static double TransferFunction(double val);
 	static double TransferFunctionDerivative(double val);
 
