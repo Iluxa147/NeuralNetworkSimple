@@ -25,19 +25,18 @@ class TrainingData
 {
 public:
 	TrainingData(const std::string filename);
-	~TrainingData();
-	bool isEof() { return trainingDataFile_.eof(); }
+	TrainingData();
+	bool isEof() { return inTrainingDataFile_.eof(); }
 	void GetTopology(std::vector<unsigned int>& topology);
 	void RewindDatatFile();
-	void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology);
+	void CreateTrainingDataFile(const std::string filename);
+	//void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology);
 
 	// returns the number of input values read from the file
 	unsigned int GetNextInputs(std::vector<double>& inputVals);
 	unsigned int GetTargetOutputs(std::vector<double>& targetOutputVals);
 
 private:
-	std::FILE *trainingDataJSON_;
-
-	std::ifstream trainingDataFile_;
-	//struct TopologyJSON;
+	std::ifstream inTrainingDataFile_;
+	std::ofstream outTrainingDataFile_;
 };

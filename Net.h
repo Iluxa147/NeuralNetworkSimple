@@ -23,7 +23,8 @@ public:
 	void BackProp(const std::vector<T>& targetVals);
 	void GetResults(std::vector<T>& resultVals) const;
 	void SerializeToJSON(std::string filename) const;
-	void Crossover(Net<T>& net);
+	void Crossover(Net<T>& net); //TODO WIP
+	void TrainingInvariant(std::vector<double>& inputVals, std::vector<double>& targetVals, std::vector<double>& resultVals);
 	double GetRecentAverageError() const { return recentAverageError_; };
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
@@ -259,4 +260,25 @@ inline void Net<T>::Crossover(Net<T>& net)
 	std::mt19937 rng(rd());
 	std::uniform_real_distribution<double> dst(0, 1);
 	dst(rng);
+}
+
+template<typename T>
+inline void Net<T>::TrainingInvariant(std::vector<double>& inputVals, std::vector<double>& targetVals, std::vector<double>& resultVals)
+{
+	FeedForward(inputVals);
+
+	GetResults(resultVals);
+	//auto a = layers_.back().size();
+	assert(targetVals.size() == layers_.back().size()-1); //topology.back());
+
+	BackProp(targetVals);
+
+
+	/*if (fabs(this.GetRecentAverageError()) < fabs(tmpError))
+	{
+		tmpError = this.GetRecentAverageError();
+		tmpNet = myNet;
+		isTheBest = true;
+		std::cout << std::endl << "Pass " << trainingPass;
+	}*/
 }

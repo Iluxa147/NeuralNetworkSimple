@@ -12,26 +12,16 @@ Layer 2
 0 output(s) at index 0 Hello Neuron number 0
 0 output(s) at index 1 Hello Neuron number 1
 
+Pass 1
+Pass 2
+Pass 3
+Pass 18
+Pass 94
+Pass 766
+Pass 926
+Pass 1101
+Pass 1141
+Pass 1431
+Pass 1474
 Generation 0
-Min Error! 1.4067e-05
-
-Generation 1
-Min Error! 3.03492e-06
-
-Generation 2
-Min Error! 2.95724e-06
-
-Generation 3
-Min Error! 2.54716e-06
-
-Generation 4
-Min Error! 1.92322e-06
-
-Generation 5
-Min Error! 1.30569e-06
-
-Generation 7
-Min Error! 7.59529e-07
-
-Generation 8
-Min Error! 7.135e-07
+Min Error! 1.57807e-05

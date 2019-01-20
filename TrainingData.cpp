@@ -5,15 +5,12 @@
 
 TrainingData::TrainingData(const std::string filename)
 {
-	trainingDataFile_.open(filename.c_str());
-	
-	fopen_s(&trainingDataJSON_, "TrainingData.json", "rb");
+	inTrainingDataFile_.open(filename.c_str());
+	//fopen_s(&trainingDataJSON_, "TrainingData.json", "rb");
 }
 
-TrainingData::~TrainingData()
+TrainingData::TrainingData()
 {
-	fclose(trainingDataJSON_);
-	delete trainingDataJSON_;
 }
 
 void TrainingData::GetTopology(std::vector<unsigned int>& topology)
@@ -21,7 +18,7 @@ void TrainingData::GetTopology(std::vector<unsigned int>& topology)
 	std::string line;
 	std::string label;
 
-	std::getline(trainingDataFile_, line);
+	std::getline(inTrainingDataFile_, line);
 	std::stringstream ss(line);
 	ss >> label;
 
@@ -42,11 +39,32 @@ void TrainingData::GetTopology(std::vector<unsigned int>& topology)
 
 void TrainingData::RewindDatatFile()
 {
-	trainingDataFile_.clear();
-	trainingDataFile_.seekg(0);
+	inTrainingDataFile_.clear();
+	inTrainingDataFile_.seekg(0);
 }
 
-void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology)
+void TrainingData::CreateTrainingDataFile(const std::string filename)
+{
+	outTrainingDataFile_.open(filename.c_str());
+
+	std::string topology = "topology: 2 4 1\n";
+
+	outTrainingDataFile_.write(topology.c_str(), topology.size());
+
+	//XOR - two inputs, one output
+	for (int i = 2000; i > 0; --i)
+	{
+		int n1 = rand() % 2;
+		int n2 = rand() % 2;
+		int t = n1^n2; // 0 or 1
+		std::string in = "in: " + std::to_string(static_cast<double>(n1)) + " " + std::to_string(static_cast<double>(n2)) + '\n';
+		outTrainingDataFile_.write(in.c_str(), in.size());
+		std::string out = "out: " + std::to_string(static_cast<double>(t)) + '\n';
+		outTrainingDataFile_.write(out.c_str(), out.size());
+	}
+}
+
+/*void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology)
 {
 
 	char readBuffer[5];
@@ -54,11 +72,7 @@ void TrainingData::GetTopologyJSON(std::vector<unsigned int>& topology)
 	//is.Take();
 	rapidjson::Document d;
 	d.ParseStream(is);
-
-	//rapidjson::Value doc;
-
-	//topology.push_back(doc["topology"].GetUint);
-}
+}*/
 
 
 unsigned int TrainingData::GetNextInputs(std::vector<double>& inputVals)
@@ -66,7 +80,7 @@ unsigned int TrainingData::GetNextInputs(std::vector<double>& inputVals)
 	inputVals.clear();
 
 	std::string line;
-	std::getline(trainingDataFile_, line);
+	std::getline(inTrainingDataFile_, line);
 	std::stringstream ss(line);
 
 	std::string label;
@@ -79,7 +93,7 @@ unsigned int TrainingData::GetNextInputs(std::vector<double>& inputVals)
 			unsigned int n;
 			ss >> n;
 		}
-		std::getline(trainingDataFile_, line);
+		std::getline(inTrainingDataFile_, line);
 		const char* c = line.c_str();
 		ss.clear();
 		ss.write(c, sizeof(line));
@@ -105,7 +119,7 @@ unsigned int TrainingData::GetTargetOutputs(std::vector<double>& targetOutputVal
 	targetOutputVals.clear();
 
 	std::string line;
-	std::getline(trainingDataFile_, line);
+	std::getline(inTrainingDataFile_, line);
 	std::stringstream ss(line);
 
 	std::string label;

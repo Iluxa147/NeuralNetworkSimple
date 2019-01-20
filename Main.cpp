@@ -18,7 +18,7 @@ using namespace rapidjson;
 //using namespace std;
 
 
-//#define TmpDataCreate
+//#define CreateTrainData
 //#define TmpDataCreateJSON
 #define Training
 //#define TryIt
@@ -124,9 +124,10 @@ void f2()
 int main()
 {
 
-#ifdef TmpDataCreate
-	CreateTrainingDataFile();
-#endif // TmpDataCreate
+#ifdef CreateTrainData
+	TrainingData newTrainData;
+	newTrainData.CreateTrainingDataFile("TrainingData.txt");
+#endif // CreateTrainData
 
 #ifdef TmpDataCreateJSON
 	CreateTrainingDataJSON();
@@ -149,6 +150,9 @@ int main()
 	int trainingPass = 0;
 
 	std::FILE *stream;
+
+	//freopen_s(&s
+
 	freopen_s(&stream, "Result.txt", "w", stdout);
 
 	//WIP generation module
@@ -158,7 +162,7 @@ int main()
 	Net<double> currentNet = tmpNet;
 
 
-	for (size_t i = 0; i < 70000; ++i)
+	for (size_t i = 0; i < 1; ++i)
 	{
 
 		while (!trainData.isEof())
@@ -174,18 +178,22 @@ int main()
 			//std::cout << std::endl << "Pass " << trainingPass;
 
 			//ShowVectorVals(": Inputs: ", inputVals);
-			myNet.FeedForward(inputVals);
+//			myNet.FeedForward(inputVals);
 
 			//collect net's actual results
-			myNet.GetResults(resultVals);
+//			myNet.GetResults(resultVals);
 			//ShowVectorVals("Outputs: ", resultVals);
 
 			//train net what outputs should have been
 			trainData.GetTargetOutputs(targetVals);
 			//ShowVectorVals("Targets:", targetVals);
+
+
 			assert(targetVals.size() == topology.back());
 
-			myNet.BackProp(targetVals);
+//			myNet.BackProp(targetVals);
+
+			myNet.TrainingInvariant(inputVals, targetVals, resultVals);
 
 			//report how well the training is working, average over recent samples
 			//std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
@@ -195,6 +203,7 @@ int main()
 				tmpError = myNet.GetRecentAverageError();
 				tmpNet = myNet;
 				isTheBest = true;
+				std::cout << std::endl << "Pass " << trainingPass;
 			}
 		}
 		/*auto a = fabs(myNet.GetRecentAverageError());
