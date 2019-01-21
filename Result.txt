@@ -15,26 +15,28 @@ Layer 2
 Pass 1
 Pass 2
 Pass 3
-Pass 8
-Pass 214
-Pass 894
-Pass 928
-Pass 1340
+Pass 17
+Pass 18
+Pass 72
+Pass 252
+Pass 585
+Pass 706
+Pass 992
+Pass 994
+Pass 1173
+Pass 1190
+Pass 1204
+Pass 1312
+Pass 1347
+Pass 1461
+Pass 1504
 Generation 0
-Min Error! 1.65795e-05
+Min Error! 4.35107e-05
 
-Pass 2412
-Generation 1
-Min Error! 3.44905e-06
-
-Pass 4573
+Pass 4176
 Generation 2
-Min Error! 2.79063e-06
+Min Error! 1.53978e-06
 
-Pass 6642
+Pass 7470
 Generation 3
-Min Error! 2.63981e-06
-
-Pass 17141
-Generation 8
-Min Error! 1.6773e-06
+Min Error! 1.11354e-06

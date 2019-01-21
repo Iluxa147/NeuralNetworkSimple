@@ -21,9 +21,21 @@ using namespace rapidjson;
 //#define CreateTrainData
 //#define Training
 //#define TmpTraining
-#define TryIt
+#define MultiThreadingTraining
 //#define TestCrossover
+//#define TryIt
 
+#ifdef MultiThreadingTraining
+
+void GetTrainingDataValuesFromFile(const std::string filename, std::vector<unsigned int> topology, std::vector<double>& inputVals, std::vector<double>& targetVals)
+{
+	TrainingData trainData(filename);
+	trainData.GetTopology(topology);
+	trainData.GetNextInputs(inputVals);
+	trainData.GetTargetOutputs(targetVals);
+}
+
+#endif // MultiThreadingTraining
 
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
@@ -93,7 +105,7 @@ int main()
 	//Net<double> currentNet = tmpNet;
 
 
-	for (size_t i = 0; i < 1; ++i)
+	for (size_t i = 0; i < 10; ++i)
 	{
 
 		while (!trainData.isEof())
@@ -108,17 +120,16 @@ int main()
 			++trainingPass;
 			//std::cout << std::endl << "Pass " << trainingPass;
 
+			//train net what outputs should have been
+			trainData.GetTargetOutputs(targetVals);
+			//ShowVectorVals("Targets:", targetVals);
+
 			//ShowVectorVals(": Inputs: ", inputVals);
 			myNet.FeedForward(inputVals);
 
 			//collect net's actual results
 			myNet.GetResults(resultVals);
 			//ShowVectorVals("Outputs: ", resultVals);
-
-			//train net what outputs should have been
-			trainData.GetTargetOutputs(targetVals);
-			//ShowVectorVals("Targets:", targetVals);
-
 
 			assert(targetVals.size() == topology.back());
 
@@ -240,7 +251,7 @@ int main()
 			myNet = tmpNet;
 			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
 			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
-			myNet.SerializeToJSON("BestNet2.json");
+			myNet.SerializeToJSON("BestNet.json");
 
 		}
 		trainData.RewindDatatFile();
@@ -253,6 +264,83 @@ int main()
 
 #endif //Training
 	
+
+#ifdef MultiThreadingTraining
+
+	TrainingData trainData("TrainingData.txt");
+
+	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
+	std::vector<unsigned int> topology;
+	trainData.GetTopology(topology);
+
+	Net<double> myNet(topology);
+
+	std::vector<double> inputVals;
+	std::vector<double> targetVals;
+	std::vector<double> resultVals;
+
+	int trainingPass = 0;
+
+	double tmpError = 100.0f;
+	bool isTheBest;
+	Net<double> tmpNet(topology);
+
+
+	for (size_t i = 0; i < 10; ++i)
+	{
+
+		while (!trainData.isEof())
+		{
+			trainData.GetNextInputs(inputVals);
+			if (inputVals.size() != topology[0])
+			{
+				break;
+			}
+
+			++trainingPass;
+			trainData.GetTargetOutputs(targetVals);
+
+			myNet.TrainingInvariant(inputVals, targetVals, resultVals);
+
+			if (fabs(myNet.GetRecentAverageError()) < fabs(tmpError))
+			{
+				tmpError = myNet.GetRecentAverageError();
+				tmpNet = myNet;
+				isTheBest = true;
+				std::cout << std::endl << "Pass " << trainingPass;
+			}
+		}
+
+		tmpNet.SetGeneration(i);
+		if (isTheBest)
+		{
+			myNet = tmpNet;
+			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
+			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
+			//myNet.SerializeToJSON("BestNet.json");
+
+		}
+		trainData.RewindDatatFile();
+
+		isTheBest = false;
+	}
+	myNet.GetRecentAverageError();
+
+
+	int a = 2;
+	std::mutex mtx;
+
+	std::thread t1(f1, std::ref(a), std::ref(mtx)); //f1 - pointer to function
+
+
+	t1.join(); //wait for t1 end
+	std::cout << a;
+	//t2.join();
+
+
+#endif //MultiThreadingTraining
+
+
 #ifdef TestCrossover
 
 	std::vector<double> inputVals;
@@ -279,7 +367,7 @@ int main()
 
 #ifdef TryIt
 
-	Net<double> newNet("BestNetCross.json");
+	Net<double> newNet("BestNet.json");
 
 	while (std::cin)
 	{
