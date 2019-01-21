@@ -19,9 +19,12 @@ using namespace rapidjson;
 
 
 //#define CreateTrainData
-//#define TmpDataCreateJSON
-#define Training
+//#define Training
+//#define TmpTraining
 //#define TryIt
+#define TestCrossover
+
+
 
 void ShowVectorVals(std::string label, std::vector<double>& v)
 {
@@ -55,86 +58,14 @@ void CreateTrainingDataFile()
 }
 #endif // TmpDataCreate
 
-#ifdef TmpDataCreateJSON
-void CreateTrainingDataJSON()
-{
-	std::FILE *f;
-	fopen_s(&f, "TrainingData.json", "wb");
-
-	rapidjson::StringBuffer strBuf;
-	rapidjson::Writer<rapidjson::StringBuffer> stringWriter(strBuf);
-
-	rapidjson::Document doc;
-	rapidjson::Value json_val;
-	auto& allocator = doc.GetAllocator();
-
-	stringWriter.StartObject();
-	stringWriter.Key("topology");
-	stringWriter.StartArray();
-	stringWriter.Uint(2);
-	stringWriter.Uint(4);
-	stringWriter.Uint(1);
-	stringWriter.EndArray();
-
-	stringWriter.Key("IN_OUT");
-	stringWriter.StartArray();
-
-	for (int i = 2; i > 0; --i)
-	{
-		int n1 = rand() % 2;
-		int n2 = rand() % 2;
-		int t = n1^n2; // 0 or 1
-
-		stringWriter.StartObject();
-		stringWriter.Key("in");
-		stringWriter.StartArray();
-		stringWriter.Double(n1);
-		stringWriter.Double(n2);
-		stringWriter.EndArray();
-
-		stringWriter.Key("out");
-		stringWriter.Double(t);
-		stringWriter.EndObject();
-
-	}
-	stringWriter.EndArray();
-	stringWriter.EndObject();
-
-	fwrite(strBuf.GetString(), 1, strBuf.GetSize(), f);
-
-	fclose(f);
-
-}
-#endif //TmpDataCreateJSON
-
-void f1(int& a, std::mutex& mtx)
-{
-	std::lock_guard<std::mutex> lock(mtx);
-	a*=a;
-	std::cout << "f1 ";
-	std::cout << "ID is " << std::this_thread::get_id() << std::endl;
-
-}
-
-void f2()
-{
-	std::cout << "f2" << std::endl;
-}
-
 int main()
 {
-
 #ifdef CreateTrainData
 	TrainingData newTrainData;
 	newTrainData.CreateTrainingDataFile("TrainingData.txt");
 #endif // CreateTrainData
 
-#ifdef TmpDataCreateJSON
-	CreateTrainingDataJSON();
-#endif // TmpDataCreateJSON
-
-#ifdef Training
-
+#ifdef TmpTraining
 	TrainingData trainData("TrainingData.txt");
 
 	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
@@ -159,7 +90,7 @@ int main()
 	double tmpError = 100.0f;
 	bool isTheBest;
 	Net<double> tmpNet(topology);
-	Net<double> currentNet = tmpNet;
+	//Net<double> currentNet = tmpNet;
 
 
 	for (size_t i = 0; i < 1; ++i)
@@ -167,9 +98,9 @@ int main()
 
 		while (!trainData.isEof())
 		{
-
 			//get new input data and feed forward
-			if (trainData.GetNextInputs(inputVals) != topology[0])
+			trainData.GetNextInputs(inputVals);
+			if (inputVals.size() != topology[0])
 			{
 				break;
 			}
@@ -178,10 +109,10 @@ int main()
 			//std::cout << std::endl << "Pass " << trainingPass;
 
 			//ShowVectorVals(": Inputs: ", inputVals);
-//			myNet.FeedForward(inputVals);
+			myNet.FeedForward(inputVals);
 
 			//collect net's actual results
-//			myNet.GetResults(resultVals);
+			myNet.GetResults(resultVals);
 			//ShowVectorVals("Outputs: ", resultVals);
 
 			//train net what outputs should have been
@@ -191,9 +122,14 @@ int main()
 
 			assert(targetVals.size() == topology.back());
 
-//			myNet.BackProp(targetVals);
+			myNet.BackProp(targetVals);
 
-			myNet.TrainingInvariant(inputVals, targetVals, resultVals);
+			auto i1 = inputVals[0];
+			auto i2 = inputVals[1];
+
+
+			auto z = targetVals[0];
+			auto x = resultVals[0];
 
 			//report how well the training is working, average over recent samples
 			//std::cout << "Net recent average error: " << myNet.GetRecentAverageError() << std::endl;
@@ -206,6 +142,7 @@ int main()
 				std::cout << std::endl << "Pass " << trainingPass;
 			}
 		}
+
 		/*auto a = fabs(myNet.GetRecentAverageError());
 		auto b = fabs(tmpError);
 
@@ -241,11 +178,108 @@ int main()
 
 	fclose(stdout);
 
+#endif // TmpTraining
+
+#ifdef Training
+
+	TrainingData trainData("TrainingData.txt");
+
+	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
+	std::vector<unsigned int> topology;
+	trainData.GetTopology(topology);
+
+	Net<double> myNet(topology);
+
+	std::vector<double> inputVals;
+	std::vector<double> targetVals;
+	std::vector<double> resultVals;
+
+	int trainingPass = 0;
+
+	std::FILE *stream;
+
+	//freopen_s(&s
+
+	freopen_s(&stream, "Result.txt", "w", stdout);
+
+	//WIP generation module
+	double tmpError = 100.0f;
+	bool isTheBest;
+	Net<double> tmpNet(topology);
+
+
+	for (size_t i = 0; i < 10; ++i)
+	{
+
+		while (!trainData.isEof())
+		{
+			//get new input data and feed forward
+			trainData.GetNextInputs(inputVals);
+			if (inputVals.size() != topology[0])
+			{
+				break;
+			}
+
+			++trainingPass;
+			trainData.GetTargetOutputs(targetVals);
+
+			myNet.TrainingInvariant(inputVals, targetVals, resultVals);
+
+			if (fabs(myNet.GetRecentAverageError()) < fabs(tmpError))
+			{
+				tmpError = myNet.GetRecentAverageError();
+				tmpNet = myNet;
+				isTheBest = true;
+				std::cout << std::endl << "Pass " << trainingPass;
+			}
+		}
+
+		tmpNet.SetGeneration(i);
+		if (isTheBest)
+		{
+			myNet = tmpNet;
+			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
+			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
+			myNet.SerializeToJSON("BestNet2.json");
+
+		}
+		trainData.RewindDatatFile();
+
+		isTheBest = false;
+
+	}
+	myNet.GetRecentAverageError();
+	fclose(stdout);
+
 #endif //Training
 	
+#ifdef TestCrossover
+
+	std::vector<double> inputVals;
+	std::vector<double> targetVals;
+	std::vector<double> resultVals;
+	std::vector<unsigned int> topology;
+
+	TrainingData trainData("TrainingData.txt");
+	trainData.GetTopology(topology);
+	trainData.GetNextInputs(inputVals);
+	trainData.GetTargetOutputs(targetVals);
+	trainData.RewindDatatFile();
+
+	Net<double> net1("BestNet.json");
+	Net<double> net2("BestNet2.json");
+
+	net1.Crossover(net2);
+
+	net1.TrainingInvariant(inputVals, targetVals, resultVals);
+	
+	net1.SerializeToJSON("BestNetCross.json");
+
+#endif TestCrossover
+
 #ifdef TryIt
 
-	Net<double> newNet("BestNet.json");
+	Net<double> newNet("BestNetCross.json");
 
 	while (std::cin)
 	{
@@ -270,16 +304,6 @@ int main()
 		std::cout << std::endl;
 	}
 #endif //TryIt
-
-	int a = 2;
-	std::mutex mtx;
-
-	std::thread t1(f1, std::ref(a), std::ref(mtx)); //f1 - pointer to function
-
-
-	t1.join(); //wait for t1 end
-	std::cout << a;
-	//t2.join();
 
 
 	system("pause");

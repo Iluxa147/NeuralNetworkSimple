@@ -23,7 +23,7 @@ public:
 	void BackProp(const std::vector<T>& targetVals);
 	void GetResults(std::vector<T>& resultVals) const;
 	void SerializeToJSON(std::string filename) const;
-	void Crossover(Net<T>& net); //TODO WIP
+	Net<T> Crossover(Net<T>& net); //TODO WIP
 	void TrainingInvariant(std::vector<double>& inputVals, std::vector<double>& targetVals, std::vector<double>& resultVals);
 	double GetRecentAverageError() const { return recentAverageError_; };
 	void SetGeneration(unsigned int num) { generation_ = num; };
@@ -247,19 +247,34 @@ inline void Net<T>::SerializeToJSON(std::string filename) const
 }
 
 template<typename T>
-inline void Net<T>::Crossover(Net<T>& net)
+inline Net<T> Net<T>::Crossover(Net<T>& net)
 {
-	//topology must be the same (layers and neurons count)
-	assert(net.layers_.size() == layers_.size());
-	for (size_t i = 0; i < layers_.size(); ++i)
-	{
-		assert(net[i].size() == layers_[i].size());
-	}
-
 	std::random_device rd;
 	std::mt19937 rng(rd());
-	std::uniform_real_distribution<double> dst(0, 1);
-	dst(rng);
+
+	//topology must be the same (layers and neurons count)
+	assert(net.layers_.size() == layers_.size());
+
+	for (size_t i = 0; i < layers_.size(); ++i)
+	{
+		assert(net.layers_[i].size() == layers_[i].size());
+
+		for (size_t j = 0; j < layers_[i].size(); ++j)
+		{
+			//if (j % 2 == 0)
+			//{
+			layers_[i][j].SetOutputVal((layers_[i][j].GetOutputVal() + net.layers_[i][j].GetOutputVal()) / 2);
+			//}
+		}
+
+		/*for (size_t j = 0; j < layers_[i].size()/2; ++j)
+		{
+			std::uniform_int_distribution<int> dst(0, layers_[i].size()-1);
+			int index = dst(rng);
+			layers_[i][index] = net.layers_[i][index];
+		}*/
+	}
+	return *this;
 }
 
 template<typename T>
@@ -272,8 +287,6 @@ inline void Net<T>::TrainingInvariant(std::vector<double>& inputVals, std::vecto
 	assert(targetVals.size() == layers_.back().size()-1); //topology.back());
 
 	BackProp(targetVals);
-
-
 	/*if (fabs(this.GetRecentAverageError()) < fabs(tmpError))
 	{
 		tmpError = this.GetRecentAverageError();

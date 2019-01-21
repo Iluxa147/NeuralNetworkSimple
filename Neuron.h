@@ -23,10 +23,10 @@ public:
 	//Neuron();
 	Neuron(unsigned int numOutputs, unsigned int neuronIndex);
 	Neuron(const rapidjson::Document& doc, unsigned int layerNum, unsigned int neuronIndex, unsigned int numOutputs); //from JSON constructor (deserializer)
-	Neuron(const Neuron& newNeuron);
+	/*Neuron(const Neuron& newNeuron);
 	Neuron(Neuron&& newNeuron);
 
-	Neuron& operator = (const Neuron& newNeuron);
+	Neuron& operator = (const Neuron& newNeuron);*/
 
 	void SetOutputVal(double val);
 	double GetOutputVal() const;

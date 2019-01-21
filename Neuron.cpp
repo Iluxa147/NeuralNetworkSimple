@@ -39,7 +39,7 @@ Neuron::Neuron(const rapidjson::Document & doc, unsigned int layerNum, unsigned 
 	}
 }
 
-Neuron::Neuron(const Neuron & newNeuron) :
+/*Neuron::Neuron(const Neuron & newNeuron) :
 	neuronIndex_(newNeuron.neuronIndex_),
 	outputVal_(newNeuron.outputVal_),
 	gradient_(newNeuron.gradient_),
@@ -60,7 +60,7 @@ Neuron & Neuron::operator=(const Neuron & newNeuron)
 	gradient_ = newNeuron.gradient_;
 	outputWeights_ = newNeuron.outputWeights_;
 	return *this;
-}
+}*/
 
 void Neuron::SetOutputVal(double val)
 {
@@ -218,8 +218,10 @@ double Neuron::TransferFunction(double val)
 
 double Neuron::TransferFunctionDerivative(double val)
 {
-	//fas aproximate tanh function
+	//fast aproximate tanh function
 	return 1.0 - tanh(val)*tanh(val);
+	//return 1.0 - val*val;
+
 }
 
 //Neuron::Neuron() {}
