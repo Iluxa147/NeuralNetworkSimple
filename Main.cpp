@@ -21,8 +21,8 @@ using namespace rapidjson;
 //#define CreateTrainData
 //#define Training
 //#define TmpTraining
-//#define TryIt
-#define TestCrossover
+#define TryIt
+//#define TestCrossover
 
 
 
