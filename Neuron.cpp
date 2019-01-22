@@ -2,7 +2,7 @@
 #include <iostream>
 #include <utility>
 
-#define DEBUG
+//#define DEBUG
 
 //[0.0; 1.0] overall net training rate
 const double Neuron::eta_ = 0.15f;

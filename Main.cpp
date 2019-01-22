@@ -21,18 +21,98 @@ using namespace rapidjson;
 //#define CreateTrainData
 //#define Training
 //#define TmpTraining
+//#define DebugMultiThreadingTraining
 #define MultiThreadingTraining
 //#define TestCrossover
 //#define TryIt
 
 #ifdef MultiThreadingTraining
 
-void GetTrainingDataValuesFromFile(const std::string filename, std::vector<unsigned int> topology, std::vector<double>& inputVals, std::vector<double>& targetVals)
+void GetTrainingDataValuesFromFile(TrainingData& trainData, std::vector<double>& inputVals, std::vector<double>& targetVals, bool& isTrained1, bool& isTrained2, bool& isTrainingFinished)
 {
-	TrainingData trainData(filename);
-	trainData.GetTopology(topology);
-	trainData.GetNextInputs(inputVals);
-	trainData.GetTargetOutputs(targetVals);
+	for (size_t i = 0; i < 1; ++i)
+	{
+		int j=0;
+		while (!trainData.isEof())
+		{
+			if (isTrained1 && isTrained2)
+			//if (isTrained1)
+			{
+				++j;
+
+				trainData.GetNextInputs(inputVals);
+				trainData.GetTargetOutputs(targetVals);
+				isTrained1 = false;
+				isTrained2 = false;
+			}
+		}
+		trainData.RewindDatatFile();
+	}
+	isTrainingFinished = true;
+}
+
+void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<double>& inputVals, std::vector<double>& targetVals, bool& isTrained, bool& isTrainingFinished)
+{
+	Net<double> tmpNet = net;
+	double tmpError = 100.0f;
+	bool isTheBest = false;
+	std::vector<double> resultVals;
+	int trainingPass = 0;
+
+#ifdef DebugMultiThreadingTraining
+	int isTheBestCount = 0;
+#endif //DebugMT
+
+	while (!isTrainingFinished)
+	{
+
+		while (!isTrained && !trainData.isEof())
+		{
+			++trainingPass;
+
+			net.TrainingInvariant(inputVals, targetVals, resultVals);
+
+			if (fabs(net.GetRecentAverageError()) < fabs(tmpError))
+			{
+				tmpError = net.GetRecentAverageError();
+				tmpNet = net;
+				isTheBest = true;
+#ifdef DebugMultiThreadingTraining
+				++isTheBestCount;
+				std::cout << "   +++" << isTheBestCount << "+++";
+#endif //DebugMT
+
+			}
+
+			///tmpNet.SetGeneration(i);
+			if (isTheBest)
+			{
+				net = tmpNet;
+#ifdef DebugMultiThreadingTraining
+				std::cout << "---" << isTheBestCount << "---Best--- ";
+				std::cout << "                  " << net.GetRecentAverageError() << std::endl;
+#endif //DebugMT
+
+				//std::cout << std::endl << "Generation " << net.GetGeneration() << std::endl;
+				//std::cout << "Min Error! " << net.GetRecentAverageError() << std::endl;
+				///myNet.SerializeToJSON("BestNet.json");
+			}
+
+			isTheBest = false;
+			isTrained = true;
+		}
+	}
+	net = tmpNet;
+}
+
+void f1(int& a, std::mutex& mtx)
+{
+	std::cout << "f1" << std::endl;
+}
+
+void f2(int& a, std::mutex& mtx)
+{
+	std::cout << "f2" << std::endl;
 }
 
 #endif // MultiThreadingTraining
@@ -267,74 +347,65 @@ int main()
 
 #ifdef MultiThreadingTraining
 
+	//std::mutex mtx1;
+	//std::mutex mtx2;
+	
+	bool isTrained1 = true;
+	bool isTrained2 = true;
+	bool isTrainingFinished = false;
+	//double tmpError1 = 100.0f;
+	//double tmpError2 = 100.0f;
+
 	TrainingData trainData("TrainingData.txt");
 
-	//number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
+	///number of neurons on each layer from start to end (excluding bias neuron). Vector size is a layer count
 	std::vector<unsigned int> topology;
 	trainData.GetTopology(topology);
 
-	Net<double> myNet(topology);
+	Net<double> net1(topology);
+	Net<double> net2(topology);
+	Net<double> netCross(topology);
 
 	std::vector<double> inputVals;
 	std::vector<double> targetVals;
-	std::vector<double> resultVals;
+	std::vector<double> resultVals; //for crossover's TrainingInvariant
 
-	int trainingPass = 0;
+	std::thread threadTrainData(GetTrainingDataValuesFromFile, std::ref(trainData), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrained2), std::ref(isTrainingFinished));
 
-	double tmpError = 100.0f;
-	bool isTheBest;
-	Net<double> tmpNet(topology);
+	std::thread SingleTrainingCycle1(SingleTrainingCycle, std::ref(trainData), std::ref(net1), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrainingFinished));
+	std::thread SingleTrainingCycle2(SingleTrainingCycle, std::ref(trainData), std::ref(net2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
 
+	threadTrainData.join();
+	SingleTrainingCycle1.join();
+	SingleTrainingCycle2.join();
+	
+	netCross = net1.Crossover(net2);
+	net1.TrainingInvariant(inputVals, targetVals, resultVals);
 
-	for (size_t i = 0; i < 10; ++i)
-	{
+	std::cout << std::endl << "net1 " << net1.GetRecentAverageError() << std::endl;
+	std::cout << std::endl << "net2 " << net2.GetRecentAverageError() << std::endl;
+	std::cout << std::endl << "netCross " << netCross.GetRecentAverageError() << std::endl;
 
-		while (!trainData.isEof())
-		{
-			trainData.GetNextInputs(inputVals);
-			if (inputVals.size() != topology[0])
-			{
-				break;
-			}
+	//net1.SerializeToJSON("BestNetMT1.json");
+	/*GetTrainingDataValuesFromFile(trainData, inputVals, targetVals);
+	SingleTrainingCycle(net1, inputVals, targetVals);
+	SingleTrainingCycle(net2, inputVals, targetVals);
 
-			++trainingPass;
-			trainData.GetTargetOutputs(targetVals);
+	net1.Crossover(net2);
 
-			myNet.TrainingInvariant(inputVals, targetVals, resultVals);
+	net1.SerializeToJSON("BestNetMT1.json");
+	net1.SerializeToJSON("BestNetMT2.json");*/
 
-			if (fabs(myNet.GetRecentAverageError()) < fabs(tmpError))
-			{
-				tmpError = myNet.GetRecentAverageError();
-				tmpNet = myNet;
-				isTheBest = true;
-				std::cout << std::endl << "Pass " << trainingPass;
-			}
-		}
-
-		tmpNet.SetGeneration(i);
-		if (isTheBest)
-		{
-			myNet = tmpNet;
-			std::cout << std::endl << "Generation " << myNet.GetGeneration() << std::endl;
-			std::cout << "Min Error! " << myNet.GetRecentAverageError() << std::endl;
-			//myNet.SerializeToJSON("BestNet.json");
-
-		}
-		trainData.RewindDatatFile();
-
-		isTheBest = false;
-	}
-	myNet.GetRecentAverageError();
-
-
-	int a = 2;
+	/*int a = 2;
 	std::mutex mtx;
+
+	//std::thread t1(f1, std::ref(a), std::ref(mtx), f2, std::ref(a), std::ref(mtx)); //f1 - pointer to function
 
 	std::thread t1(f1, std::ref(a), std::ref(mtx)); //f1 - pointer to function
 
-
-	t1.join(); //wait for t1 end
-	std::cout << a;
+	std::cout << "main" << std::endl;*/
+	//t1.join(); //wait for t1 end
+	//std::cout << a;
 	//t2.join();
 
 

@@ -50,13 +50,17 @@ inline Net<T>::Net(const std::vector<unsigned int>& topology)
 		//outputs connections quantity for each neuron in that particular layer. Ofc, no outputs at output layer
 		unsigned int numOutputs = layerNum == topology.size() - 1 ? 0 : topology[layerNum + 1];
 
+#ifdef Debug
 		std::cout << "Layer " << layerNum << std::endl;
+#endif //Debug
 
 		//fill current layer with neurons + bias neuron
 		for (size_t neuronNum = 0; neuronNum <= topology[layerNum]; ++neuronNum)
 		{
 			layers_.back().push_back(Neuron(numOutputs, neuronNum));
+#ifdef Debug
 			std::cout << "Hello Neuron number " << neuronNum << std::endl;
+#endif //Debug
 		}
 		layers_.back().back().SetOutputVal(1.0f); //set value for bias neuron in output layer
 	}
@@ -156,6 +160,7 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 
 	//recent average measurement
 	recentAverageError_ = (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);
+
 #ifdef Debug
 	if (fabs(recentAverageError_) <= 0.0000000813727)
 	{
