@@ -32,13 +32,13 @@ using namespace rapidjson;
 
 void GetTrainingDataValuesFromFile(TrainingData& trainData, std::vector<double>& inputVals, std::vector<double>& targetVals, bool& isTrained1, bool& isTrained2, bool& isTrainingFinished)
 {
-	for (size_t i = 0; i < 10; ++i)
+	for (size_t i = 0; i < 1; ++i)
 	{
 		int j=0;
 		while (!trainData.isEof())
 		{
-			if (isTrained1 && isTrained2)
-			//if (isTrained1)
+			//if (isTrained1 && isTrained2)
+			if (isTrained1)
 			{
 				++j;
 
@@ -61,7 +61,12 @@ void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<
 	std::vector<double> resultVals;
 	int trainingPass = 0;
 
+
 #ifdef DebugMultiThreadingTraining
+	std::vector<double> debugTmpInput;
+	std::vector<double> debugTmpOutput;
+	Net<double> debugNet = net;
+
 	int isTheBestCount = 0;
 #endif //DebugMT
 
@@ -74,9 +79,9 @@ void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<
 
 			net.TrainingInvariant(inputVals, targetVals, resultVals);
 
-			if (fabs(net.GetCurrentRecentAverageError()) < fabs(tmpError))
+			if (fabs(net.CalculateError(targetVals)) < fabs(tmpError))
 			{
-				tmpError = net.GetCurrentRecentAverageError();
+				tmpError = net.CalculateError(targetVals);
 				tmpNet = net;
 				isTheBest = true;
 #ifdef DebugMultiThreadingTraining
@@ -92,7 +97,24 @@ void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<
 				net = tmpNet;
 #ifdef DebugMultiThreadingTraining
 				std::cout << "---" << isTheBestCount << "---Best--- ";
-				std::cout << "                  " << net.GetCurrentRecentAverageError() << std::endl;
+				std::cout << "        " << net.CalculateError(targetVals) << " " << net.GetCurrentRecentAverageError() << " input: " << inputVals[0] << " " << inputVals[1] << " output: " << resultVals[0] << std::endl;
+				
+				debugTmpInput = inputVals;
+				debugTmpOutput = resultVals;
+				debugNet = net;
+				//debugNet.TrainingInvariant(debugTmpInput, targetVals, debugTmpOutput);
+				debugNet.FeedForward(debugTmpInput);
+				debugNet.GetResults(debugTmpOutput);
+				std::cout << "*********************************" << std::endl;
+				std::cout << "after TrainingInvariant:  " << debugNet.CalculateError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl << std::endl;
+
+				debugNet.FeedForward(debugTmpInput);
+				debugNet.GetResults(debugTmpOutput);
+				std::cout << "*********************************" << std::endl;
+				std::cout << "after TrainingInvariant:  " << debugNet.CalculateError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl << std::endl;
+
+
+
 #endif //DebugMT
 
 				//std::cout << std::endl << "Generation " << net.GetGeneration() << std::endl;
@@ -380,23 +402,27 @@ int main()
 	std::thread threadTrainData(GetTrainingDataValuesFromFile, std::ref(trainData), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrained2), std::ref(isTrainingFinished));
 
 	std::thread SingleTrainingCycle1(SingleTrainingCycle, std::ref(trainData), std::ref(net1), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrainingFinished));
-	std::thread SingleTrainingCycle2(SingleTrainingCycle, std::ref(trainData), std::ref(net2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
+	//std::thread SingleTrainingCycle2(SingleTrainingCycle, std::ref(trainData), std::ref(net2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
 
 	threadTrainData.join();
 	SingleTrainingCycle1.join();
-	SingleTrainingCycle2.join();
+	//SingleTrainingCycle2.join();
+
+	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
+	std::cout << '\n' << "execution time: " << duration << '\n';
+
 
 	net1.SerializeToJSON("BestNetMT1.json");
 	net2.SerializeToJSON("BestNetMT2.json");
 
 	std::cout << std::endl << "net1 " << net1.GetCurrentRecentAverageError() << std::endl;
 
-	net1.Crossover(net2);
+	//net1.Crossover(net2);
 
 	netCross1 = net1;
 	//netCross2 = net2.Crossover(net1);
 
-	net1.TrainingInvariant(inputVals, targetVals, resultVals);
+	//net1.TrainingInvariant(inputVals, targetVals, resultVals);
 	netCross1.TrainingInvariant(inputVals, targetVals, resultVals);
 
 	std::cout << std::endl << "net2 " << net2.GetCurrentRecentAverageError() << std::endl;
@@ -458,8 +484,9 @@ int main()
 #endif TestCrossover
 
 #ifdef TryIt
-
-	Net<double> newNet("BestNetMT1.json");
+	std::string filename = "BestNetMT1.json";
+	std::cout << std::endl << filename << std::endl;
+	Net<double> newNet(filename);
 
 	while (std::cin)
 	{
@@ -475,21 +502,18 @@ int main()
 		inputVals.push_back(a);
 		inputVals.push_back(b);
 
-		newNet.FeedForward(inputVals);
+		net1.FeedForward(inputVals);
 
-		newNet.GetResults(resultVals);
+		net1.GetResults(resultVals);
 
 		for (const auto &n : resultVals)
 		{
-			std::cout << "Answer is: " << fabs(roundf(n)) << " check: " << (a^b) << " actual output: " << n << " error: "<< newNet.CalculateError(targetVals) << std::endl;
+			std::cout << "Answer is: " << fabs(roundf(n)) << " check: " << (a^b) << " actual output: " << n << " error: "<< net1.CalculateError(targetVals) << " " << net1.GetCurrentRecentAverageError() << std::endl;
 		}
 		std::cout << std::endl;
 	}
 #endif //TryIt
 
-	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-	std::cout << '\n' << "execution time: " << duration << '\n';
-	
 	system("pause");
 
 	return 0;
