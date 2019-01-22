@@ -35,6 +35,7 @@ public:
 	void CalcOutputGradients(double targetVal);
 	void CalcHiddenGradients(const Layer& nextLayer);
 	void UpdateInputWeights(Layer& prevLayer);
+	void Crossover(const Neuron& srcNeuron);
 	rapidjson::Document SerializeToJSON() const;
 	// Neuron DeserializeFromJSON(const rapidjson::Value& doc);
 

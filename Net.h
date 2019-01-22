@@ -23,9 +23,10 @@ public:
 	void BackProp(const std::vector<T>& targetVals);
 	void GetResults(std::vector<T>& resultVals) const;
 	void SerializeToJSON(std::string filename) const;
-	Net<T> Crossover(Net<T>& net); //TODO WIP
+	Net<T> Crossover(const Net<T>& net); //TODO WIP
 	void TrainingInvariant(std::vector<double>& inputVals, std::vector<double>& targetVals, std::vector<double>& resultVals);
-	double GetRecentAverageError() const { return recentAverageError_; };
+	double GetCurrentRecentAverageError() const { return recentAverageError_; };
+	double CalculateError(const std::vector<T>& targetVals);
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
 	//void DeserializeFromJSON(std::string filename);
@@ -139,8 +140,11 @@ inline void Net<T>::FeedForward(const std::vector<T>& inputVals)
 
 template<typename T>
 inline void Net<T>::BackProp(const std::vector<T>& targetVals)
-{
+{	
 	Layer &outputLayer = layers_.back();
+
+	recentAverageError_ = CalculateError(targetVals);
+	/*Layer &outputLayer = layers_.back();
 	error_ = 0.0f;
 
 	//calculate overall net error (RMS of output neuron errors), excluding bias
@@ -159,7 +163,7 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 	error_ = sqrtf(error_);
 
 	//recent average measurement
-	recentAverageError_ = (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);
+	recentAverageError_ = (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);*/
 
 #ifdef Debug
 	if (fabs(recentAverageError_) <= 0.0000000813727)
@@ -252,7 +256,7 @@ inline void Net<T>::SerializeToJSON(std::string filename) const
 }
 
 template<typename T>
-inline Net<T> Net<T>::Crossover(Net<T>& net)
+inline Net<T> Net<T>::Crossover(const Net<T>& net)
 {
 	std::random_device rd;
 	std::mt19937 rng(rd());
@@ -260,24 +264,20 @@ inline Net<T> Net<T>::Crossover(Net<T>& net)
 	//topology must be the same (layers and neurons count)
 	assert(net.layers_.size() == layers_.size());
 
+	/*for (size_t i = 0; i < layers_[0].size(); ++i)
+	{
+		layers_[0][i].SetOutputVal((layers_[0][i].GetOutputVal() + net.layers_[0][i].GetOutputVal()) / 2.0f);
+	}*/
 	for (size_t i = 0; i < layers_.size(); ++i)
 	{
 		assert(net.layers_[i].size() == layers_[i].size());
 
 		for (size_t j = 0; j < layers_[i].size(); ++j)
 		{
-			//if (j % 2 == 0)
-			//{
-			layers_[i][j].SetOutputVal((layers_[i][j].GetOutputVal() + net.layers_[i][j].GetOutputVal()) / 2);
-			//}
+			layers_[i][j].Crossover(net.layers_[i][j]);
+			//std::cout << i << " " << j << std::endl;
+			//layers_[i][j].SetOutputVal((layers_[i][j].GetOutputVal() + net.layers_[i][j].GetOutputVal()) / 2.0f);
 		}
-
-		/*for (size_t j = 0; j < layers_[i].size()/2; ++j)
-		{
-			std::uniform_int_distribution<int> dst(0, layers_[i].size()-1);
-			int index = dst(rng);
-			layers_[i][index] = net.layers_[i][index];
-		}*/
 	}
 	return *this;
 }
@@ -299,4 +299,23 @@ inline void Net<T>::TrainingInvariant(std::vector<double>& inputVals, std::vecto
 		isTheBest = true;
 		std::cout << std::endl << "Pass " << trainingPass;
 	}*/
+}
+
+template<typename T>
+inline double Net<T>::CalculateError(const std::vector<T>& targetVals)
+{
+	Layer &outputLayer = layers_.back();
+	error_ = 0.0f;
+
+	//calculate overall net error (RMS of output neuron errors), excluding bias
+	for (size_t n = 0; n < outputLayer.size() - 1; ++n)
+	{
+		double delata = targetVals[n] - outputLayer[n].GetOutputVal();
+		error_ += delata * delata;
+	}
+	error_ /= outputLayer.size() - 1;
+	error_ = sqrtf(error_);
+
+	//recent average measurement
+	return (recentAverageError_ * recentAverageSmoothingFacor_ + error_) / (recentAverageSmoothingFacor_ + 1.0f);
 }
