@@ -20,25 +20,25 @@ using namespace rapidjson;
 //using namespace std;
 
 
-//#define CreateTrainData
+#define CreateTrainData
 //#define Training
 //#define TmpTraining
-#define DebugMultiThreadingTraining
-#define MultiThreadingTraining
+//#define DebugMultiThreadingTraining
+//#define MultiThreadingTraining
 //#define TestCrossover
-#define TryIt
+//#define TryIt
 
 #ifdef MultiThreadingTraining
 
 void GetTrainingDataValuesFromFile(TrainingData& trainData, std::vector<double>& inputVals, std::vector<double>& targetVals, bool& isTrained1, bool& isTrained2, bool& isTrainingFinished)
 {
-	for (size_t i = 0; i < 1; ++i)
+	for (size_t i = 0; i < 10; ++i)
 	{
 		int j=0;
 		while (!trainData.isEof())
 		{
-			//if (isTrained1 && isTrained2)
-			if (isTrained1)
+			if (isTrained1 && isTrained2)
+			//if (isTrained1)
 			{
 				++j;
 
@@ -79,16 +79,15 @@ void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<
 
 			net.TrainingInvariant(inputVals, targetVals, resultVals);
 
-			if (fabs(net.CalculateError(targetVals)) < fabs(tmpError))
+			if (fabs(net.CalculateAndGetError(targetVals)) < fabs(tmpError))
 			{
-				tmpError = net.CalculateError(targetVals);
+				tmpError = net.CalculateAndGetError(targetVals);
 				tmpNet = net;
 				isTheBest = true;
 #ifdef DebugMultiThreadingTraining
 				++isTheBestCount;
-				std::cout << "   +++" << isTheBestCount << "+++";
+				std::cout << "+++" << isTheBestCount << "+++";
 #endif //DebugMT
-
 			}
 
 			///tmpNet.SetGeneration(i);
@@ -96,39 +95,42 @@ void SingleTrainingCycle(TrainingData& trainData, Net<double>& net, std::vector<
 			{
 				net = tmpNet;
 #ifdef DebugMultiThreadingTraining
-				std::cout << "---" << isTheBestCount << "---Best--- ";
-				std::cout << "        " << net.CalculateError(targetVals) << " " << net.GetCurrentRecentAverageError() << " input: " << inputVals[0] << " " << inputVals[1] << " output: " << resultVals[0] << std::endl;
-				
+
 				debugTmpInput = inputVals;
 				debugTmpOutput = resultVals;
 				debugNet = net;
+
+				std::cout << "---" << isTheBestCount << "---Best--- " << trainingPass;
+				std::cout << "        " << debugNet.CalculateAndGetError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << inputVals[0] << " " << inputVals[1] << " output: " << debugTmpOutput[0] << std::endl;
+				
 				//debugNet.TrainingInvariant(debugTmpInput, targetVals, debugTmpOutput);
-				debugNet.FeedForward(debugTmpInput);
-				debugNet.GetResults(debugTmpOutput);
-				std::cout << "*********************************" << std::endl;
-				std::cout << "after TrainingInvariant:  " << debugNet.CalculateError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl << std::endl;
+				//std::cout << "*********************************" << std::endl;
+				//std::cout << "after TrainingInvariant:  " << debugNet.CalculateAndGetError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl;
 
 				debugNet.FeedForward(debugTmpInput);
 				debugNet.GetResults(debugTmpOutput);
 				std::cout << "*********************************" << std::endl;
-				std::cout << "after TrainingInvariant:  " << debugNet.CalculateError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl << std::endl;
+				std::cout << "after 1st FeedForward:  " << debugNet.CalculateAndGetError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl;
 
+
+				debugNet.FeedForward(debugTmpInput);
+				debugNet.GetResults(debugTmpOutput);
+				std::cout << "*********************************" << std::endl;
+				std::cout << "after 2nd FeedForward:  " << debugNet.CalculateAndGetError(targetVals) << " " << debugNet.GetCurrentRecentAverageError() << " input: " << debugTmpInput[0] << " " << debugTmpInput[1] << " output: " << debugTmpOutput[0] << std::endl << std::endl;
 
 
 #endif //DebugMT
-
 				//std::cout << std::endl << "Generation " << net.GetGeneration() << std::endl;
 				//std::cout << "Min Error! " << net.GetRecentAverageError() << std::endl;
 				///myNet.SerializeToJSON("BestNet.json");
 			}
-
 			isTheBest = false;
 			isTrained = true;
 		}
 	}
 	net = tmpNet;
 }
-
+/*
 void f1(int& a, std::mutex& mtx)
 {
 	std::cout << "f1" << std::endl;
@@ -137,7 +139,7 @@ void f1(int& a, std::mutex& mtx)
 void f2(int& a, std::mutex& mtx)
 {
 	std::cout << "f2" << std::endl;
-}
+}*/
 
 #endif // MultiThreadingTraining
 
@@ -393,7 +395,7 @@ int main()
 	Net<double> net1(topology);
 	Net<double> net2(topology);
 	Net<double> netCross1(topology);
-	//Net<double> netCross2(topology);
+	Net<double> netCross2(topology);
 
 	std::vector<double> inputVals;
 	std::vector<double> targetVals;
@@ -402,34 +404,47 @@ int main()
 	std::thread threadTrainData(GetTrainingDataValuesFromFile, std::ref(trainData), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrained2), std::ref(isTrainingFinished));
 
 	std::thread SingleTrainingCycle1(SingleTrainingCycle, std::ref(trainData), std::ref(net1), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrainingFinished));
-	//std::thread SingleTrainingCycle2(SingleTrainingCycle, std::ref(trainData), std::ref(net2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
+	std::thread SingleTrainingCycle2(SingleTrainingCycle, std::ref(trainData), std::ref(net2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
+
+	//std::thread CrossNet1TrainingCycle(SingleTrainingCycle, std::ref(trainData), std::ref(netCross1), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained1), std::ref(isTrainingFinished));
+	//std::thread CrossNet2TrainingCycle(SingleTrainingCycle, std::ref(trainData), std::ref(netCross2), std::ref(inputVals), std::ref(targetVals), std::ref(isTrained2), std::ref(isTrainingFinished));
 
 	threadTrainData.join();
+
 	SingleTrainingCycle1.join();
-	//SingleTrainingCycle2.join();
+	SingleTrainingCycle2.join();
+
+	//CrossNet1TrainingCycle.join();
+	//CrossNet2TrainingCycle.join();
 
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-	std::cout << '\n' << "execution time: " << duration << '\n';
-
 
 	net1.SerializeToJSON("BestNetMT1.json");
 	net2.SerializeToJSON("BestNetMT2.json");
 
+	netCross1 = net1;
+	netCross2 = net2;
+	
+	netCross1.Crossover(net2);
+	netCross2.Crossover(net1);
+
+	netCross1.SerializeToJSON("BestNetMTCross1.json");
+	netCross2.SerializeToJSON("BestNetMTCross2.json");
+
+#ifdef DebugMultiThreadingTraining
+	std::cout << '\n' << "execution time: " << duration << '\n';
 	std::cout << std::endl << "net1 " << net1.GetCurrentRecentAverageError() << std::endl;
 
-	//net1.Crossover(net2);
-
-	netCross1 = net1;
-	//netCross2 = net2.Crossover(net1);
-
-	//net1.TrainingInvariant(inputVals, targetVals, resultVals);
+	net1.TrainingInvariant(inputVals, targetVals, resultVals);
 	netCross1.TrainingInvariant(inputVals, targetVals, resultVals);
 
 	std::cout << std::endl << "net2 " << net2.GetCurrentRecentAverageError() << std::endl;
 	std::cout << std::endl << "net1 Crossed " << net1.GetCurrentRecentAverageError() << std::endl;
 	std::cout << std::endl << "netCross1 " << netCross1.GetCurrentRecentAverageError() << std::endl;
-	
-	netCross1.SerializeToJSON("BestNetMTCross.json");
+	std::cout << std::endl << "netCross2 " << netCross2.GetCurrentRecentAverageError() << std::endl;
+
+#endif //DebugMultiThreadingTraining
+
 
 	//std::cout << std::endl << "netCross2 " << netCross2.GetRecentAverageError() << std::endl;
 
@@ -485,6 +500,7 @@ int main()
 
 #ifdef TryIt
 	std::string filename = "BestNetMT1.json";
+	//std::string filename = "BestNetMTCross2.json";
 	std::cout << std::endl << filename << std::endl;
 	Net<double> newNet(filename);
 
@@ -502,15 +518,14 @@ int main()
 		inputVals.push_back(a);
 		inputVals.push_back(b);
 
-		net1.FeedForward(inputVals);
+		newNet.FeedForward(inputVals);
 
-		net1.GetResults(resultVals);
+		newNet.GetResults(resultVals);
 
 		for (const auto &n : resultVals)
 		{
-			std::cout << "Answer is: " << fabs(roundf(n)) << " check: " << (a^b) << " actual output: " << n << " error: "<< net1.CalculateError(targetVals) << " " << net1.GetCurrentRecentAverageError() << std::endl;
+			std::cout << "Answer is: " << fabs(roundf(n)) << " check: " << (a^b) << " actual output: " << n << " error: "<< newNet.CalculateAndGetError(targetVals) << " " << newNet.GetCurrentRecentAverageError() << std::endl;
 		}
-		std::cout << std::endl;
 	}
 #endif //TryIt
 

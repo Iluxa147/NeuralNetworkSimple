@@ -136,20 +136,20 @@ void Neuron::Crossover(const Neuron & srcNeuron)
 {
 	assert(neuronIndex_ == srcNeuron.neuronIndex_);
 
-	//outputVal_ = (outputVal_ + srcNeuron.outputVal_) / 2.0f;
-	//gradient_ = (gradient_ + srcNeuron.gradient_) / 2.0f;
+	outputVal_ = (outputVal_ + srcNeuron.outputVal_) / 2.0f;
+	gradient_ = (gradient_ + srcNeuron.gradient_) / 2.0f;
 
-	outputVal_ = srcNeuron.outputVal_;
-	gradient_ = srcNeuron.gradient_;
+	//outputVal_ = srcNeuron.outputVal_;
+	//gradient_ = srcNeuron.gradient_;
 
 	assert(outputWeights_.size() == srcNeuron.outputWeights_.size());
 
 	for (size_t i = 0; i < outputWeights_.size(); ++i)
 	{
-		outputWeights_[i].weight = srcNeuron.outputWeights_[i].weight;
-		outputWeights_[i].deltaWeight = srcNeuron.outputWeights_[i].deltaWeight;
-		//outputWeights_[i].weight = (outputWeights_[i].weight + srcNeuron.outputWeights_[i].weight) / 2.0f;
-		//outputWeights_[i].deltaWeight = (outputWeights_[i].deltaWeight + srcNeuron.outputWeights_[i].deltaWeight) / 2.0f;
+		//outputWeights_[i].weight = srcNeuron.outputWeights_[i].weight;
+		//outputWeights_[i].deltaWeight = srcNeuron.outputWeights_[i].deltaWeight;
+		outputWeights_[i].weight = (outputWeights_[i].weight + srcNeuron.outputWeights_[i].weight) / 2.0f;
+		outputWeights_[i].deltaWeight = (outputWeights_[i].deltaWeight + srcNeuron.outputWeights_[i].deltaWeight) / 2.0f;
 	}
 }
 

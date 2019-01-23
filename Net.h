@@ -26,7 +26,7 @@ public:
 	Net<T> Crossover(const Net<T>& net); //TODO WIP
 	void TrainingInvariant(std::vector<double>& inputVals, std::vector<double>& targetVals, std::vector<double>& resultVals);
 	double GetCurrentRecentAverageError() const { return recentAverageError_; };
-	double CalculateError(const std::vector<T>& targetVals);
+	double CalculateAndGetError(const std::vector<T>& targetVals);
 	void SetGeneration(unsigned int num) { generation_ = num; };
 	unsigned int GetGeneration() const { return generation_; };
 	//void DeserializeFromJSON(std::string filename);
@@ -143,7 +143,7 @@ inline void Net<T>::BackProp(const std::vector<T>& targetVals)
 {	
 	Layer &outputLayer = layers_.back();
 
-	recentAverageError_ = CalculateError(targetVals);
+	recentAverageError_ = CalculateAndGetError(targetVals);
 	/*Layer &outputLayer = layers_.back();
 	error_ = 0.0f;
 
@@ -292,6 +292,10 @@ inline void Net<T>::TrainingInvariant(std::vector<double>& inputVals, std::vecto
 	assert(targetVals.size() == layers_.back().size()-1); //topology.back());
 
 	BackProp(targetVals);
+	FeedForward(inputVals);
+	recentAverageError_ = CalculateAndGetError(targetVals);
+
+	//FeedForward(inputVals);
 	/*if (fabs(this.GetRecentAverageError()) < fabs(tmpError))
 	{
 		tmpError = this.GetRecentAverageError();
@@ -302,7 +306,7 @@ inline void Net<T>::TrainingInvariant(std::vector<double>& inputVals, std::vecto
 }
 
 template<typename T>
-inline double Net<T>::CalculateError(const std::vector<T>& targetVals)
+inline double Net<T>::CalculateAndGetError(const std::vector<T>& targetVals)
 {
 	Layer &outputLayer = layers_.back();
 	error_ = 0.0f;
